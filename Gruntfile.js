@@ -6,7 +6,7 @@
 
 module.exports = function(grunt) {
 
-	require('grunt-timer')(grunt, { scope: 'devDependencies' });
+	require('time-grunt')(grunt);
 	require('load-grunt-tasks')(grunt, { scope: 'devDependencies' });
 
 	grunt.initConfig({
