@@ -6,16 +6,17 @@
 
 module.exports = function(grunt) {
 
+	require('grunt-timer')(grunt, { scope: 'devDependencies' });
 	require('load-grunt-tasks')(grunt, { scope: 'devDependencies' });
 
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
 		
 		banner: '/*!\n' +
-            ' * Project-Haesal <%= pkg.version %> by <%= pkg.author %>\n' +
-            ' * Copyright 2015-<%= grunt.template.today("yyyy") %> <%= pkg.author %>\n' +
-            ' * Licensed under the <%= pkg.license %> license\n' +
-            ' */\n',
+				' * Project-Haesal <%= pkg.version %> by <%= pkg.author %>\n' +
+				' * Copyright 2015-<%= grunt.template.today("yyyy") %> <%= pkg.author %>\n' +
+				' * Licensed under the <%= pkg.license %> license\n' +
+				' */\n',
 			
 		clean: {
 			dist: 'dist',
@@ -38,7 +39,7 @@ module.exports = function(grunt) {
 				
 				src: "less/<%= pkg.name %>.less",
 				dest: "public/resources/css/<%= pkg.name %>.css"
-			},
+			}
 		},
 		
 		autoprefixer: {

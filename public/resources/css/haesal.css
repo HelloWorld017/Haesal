@@ -18,6 +18,9 @@
   color: #ecf0f1;
   background-color: #e74c3c;
 }
+.bg-transparent {
+  background-color: transparent !important;
+}
 @font-face {
   font-famiy: 'NanumBarunGothic';
   src: url('/resources/fonts/NanumBarunGothic.woff') format("woff"), url('/resources/fonts/NanumBarunGothic.eot?#iefix') format("embedded-opentype");

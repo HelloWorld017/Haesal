@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+	<head>
+		<meta charset="UTF-8">
+		<title><%= folderName %></title>
+		<meta name="viewport" content="width=device-width, user-scalable=no">
+
+		<!-- Importing Bootstrap and FontAwesome -->
+		<link rel="stylesheet" type="text/css" href="/resources/css/bootstrap.min.css">
+		<link rel="stylesheet" type="text/css" href="/resources/css/font-awesome.min.css">
+
+		<!-- Importing jQuery and Bootstrap -->
+		<script src="/resources/js/jquery-2.1.4.min.js"></script>
+		<script src="/resources/js/bootstrap.min.js"></script>
+
+		<script>
+			var isScrolling = false;
+
+			$(document).ready(function(){
+				//=====ScrollSpy and AutoScroll=====
+
+				var content = $('#content');
+
+				//Navbar click
+				$('#top-navbar').find('a').on('click', function(event) {
+					event.preventDefault();
+					$("#top-navbar").collapse("hide");
+
+					var hash = this.hash;
+
+					scrollTo($(hash).offset(), hash);
+				});
+
+				//Mouse wheel
+				$('body').on('wheel', function(event){
+					event.preventDefault();
+					var hash = window.location.hash;
+
+					if(hash === ""){
+						hash = "#" + content.children[0].id;
+					}
+
+					var scroll = null;
+
+					if(event.originalEvent.deltaY > 0){
+						//Scrolling down
+						scroll = content.find(hash).next();
+					}else if(event.originalEvent.deltaY < 0){
+						//Scrolling up
+						scroll = content.find(hash).prev();
+					}
+
+					if(!scroll || scroll.length <= 0) return;
+
+					scrollTo(scroll.offset(), "#" + scroll[0].id);
+				});
+
+				//Scrollbar
+				$(window).scroll(function(){
+					if(isScrolling) return;
+
+					var id = getNearestElement(getCurrentScroll());
+
+					if(window.location.hash !== id){
+						history.replaceState(null, null, id);
+					}
+				});
+
+				var scroll = $(window.location.hash);
+				if(scroll.length > 0){
+					scrollTo(scroll.offset(), window.location.hash);
+				}
+			});
+
+			function getCurrentScroll(){
+				return $(window).scrollTop + 50;
+			}
+
+			function getNearestElement(fromTop){
+				var content = $('#content');
+				var current = content.children.map(function(){
+					if($(this).offset().top < fromTop) return this;
+				}).sort();
+
+				var scroll = current[current.length - 1];
+
+				if(!scroll){
+					scroll = content.children[0];
+				}
+				return "#" + scroll.id;
+			}
+
+			function scrollTo(offset, hash){
+				isScrolling = true;
+				$('html, body').animate(
+				{scrollTop: offset.top},
+				{
+					duration: 500,
+					done: function(){
+						window.location.hash = hash;
+						setTimeout(function(){
+							isScrolling = false;
+						}, 50);
+					}
+				});
+			}
+		</script>
+
+		<style>
+			.nav-left{
+				position: fixed;
+				left: 0;
+				top: 0;
+				padding-left: 0;
+				font-weight: bold;
+			}
+
+			.nav-toggle{
+				border: 1px solid #333;
+				padding: 9px 10px;
+				margin-top: 8px;
+				margin-bottom: 8px;
+				cursor: inherit;
+			}
+
+			.nav-toggle:hover{
+				background: #333 !important;
+			}
+
+			.nav-top{
+				margin-top: 8px;
+			}
+
+		</style>
+	</head>
+
+	<body class="top-padding-navbar" role="document">
+		<section role="main">
+			<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+				<div class="container">
+					<div class="navbar-header">
+						<ul class="breadcrumb nav-top bright-font">
+							<% %>
+						</ul>
+
+						<button type="button" class="navbar-toggle bg-transparent" data-toggle="collapse" data-target="#top-navbar">
+							<span class="fa fa-bars bright-font"></span>
+						</button>
+
+						<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#right-navbar">
+							<span class="fa fa-map-signs bright-font"></span>
+						</button>
+					</div>
+
+					<div class="navbar-header navbar-right navbar-collapse collapse">
+						<button type="button" class="bt bg-transparent nav-toggle" data-toggle="collapse" data-target="#right-navbar">
+							<span class="fa fa-map-signs bright-font"></span>
+						</button>
+					</div>
+				</div>
+			</nav>
+
+			<div id="content">
+
+			</div>
+		</section>
+
+		<div id="right-navbar" class="nav-left nav-pills nav-stacked extra-top-padding-navbar collapse in" aria-expanded="false" role="navigation">
+			<ul class="nav">
+				<% %>
+			</ul>
+		</div>
+	</body>
+</html>
