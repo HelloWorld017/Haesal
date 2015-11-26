@@ -46,8 +46,6 @@ const GITHUB_CLIENT_SECRET = "yyyy";
 const GITHUB_API_BASE = "https://api.github.com/repos/";
 const GITHUB_URL_BASE = "https://github.com/";
 
-const CUSTOM_HANDLER_NAME = "custom";
-
 var defaultConfig = {
 	accessibility: ACCESSIBILITY_YES,
 	index: false,
@@ -218,12 +216,6 @@ this.prototype.listFiles = function(){
 
 	if(!json) return [];
 
-	/*return new CustomFileList(GITHUB_HANDLER_NAME, json["tag_name"],
-		JSON.stringify({
-			assets: json["assets_url"],
-			index: json["body"]
-		}), json["name"]);*/
-
 	var marked = require('marked');
 	var index = marked(json["body"]);
 	var files = [];
@@ -268,56 +260,6 @@ FileList.prototype = {
 		return this.index;
 	}
 };
-
-/*function CustomFileList(handlerName, uniqueId, meta, name){
-	this.handlerName = handlerName;
-	this.listName = name;
-	this.meta = meta;
-	this.uniqueId = uniqueId;
-}
-
-CustomFileList.prototoype = {
-	getName: function(){
-		return this.listName;
-	},
-
-	getHandlerName: function(){
-		return this.handlerName;
-	},
-
-	getID: function(){
-		return this.uniqueId;
-	},
-
-	getMeta: function(){
-		return this.meta;
-	}
-};
-
-/*function CustomFolder(path, customFolderName, files, index){
-	this.path = path;
-	this.name = customFolderName;
-	this.files = files;
-	this.index = index;
-	this._parent = new Folder(path, config);
-	this.prototype = this._parent.prototype;
-}
-
-CustomFolder.prototype.listFiles = function(){
-	return this.files;
-};
-
-CustomFolder.prototype.getIndex = function(){
-	return this.index;
-};
-
-CustomFolder.prototype.getAccessibility = function(){
-	return true;
-};
-
-CustomFolder.prototype.getFolderType = function(){
-	return CUSTOM_HANDLER_NAME;
-};*/
 
 function getFolder(directory){
 	var fileSystem = require('fs');
@@ -380,38 +322,5 @@ function getFolderName(path){
 	var folders = path.split("/");
 	return folders[folders.length - 1];
 }
-
-/*function getCustomFileList(path, handler, uid, meta, name){
-	switch(handler){
-		case GITHUB_HANDLER_NAME:
-			var files = [];
-			var json = null;
-			meta = JSON.parse(meta);
-
-			var request = require('request');
-			request({
-				url: meta["assets"] + "?client_id=" + GITHUB_CLIENT_ID + "&client_secret=" + GITHUB_CLIENT_SECRET,
-				headers: {
-					'User-Agent': 'Haesal'
-				}
-			}, function(err, response, body){
-				if(err) return;
-				if(response !== 200) return;
-				json = JSON.parse(body);
-			});
-
-			if(!json) return null;
-
-			json.forEach(function(v){
-				files.push(
-					new File(path + v["name"], {
-						download: v["browser_download_url"]
-					})
-				);
-			});
-
-			var folder = new CustomFolder(path, name, files, meta["index"]);
-	}
-}*/
 
 module.exports = router;
