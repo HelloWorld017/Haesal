@@ -11,7 +11,7 @@ router.get('*', function(req, res){
 		return;
 	}
 
-	res.render('index', {folderName: folderName});
+	res.render('index', {folderName: folderName, files: getFolder(req.path).listFiles});
 });
 
 
@@ -105,6 +105,7 @@ Folder.prototype = {
 	listFiles: function(fileSystem){
 		var files = [];
 		var fileObjects = [];
+		var path = this.getPath();
 
 		fileSystem.readdir(this.getPath(), function(err, fileList){
 			if(err) return;
@@ -116,7 +117,7 @@ Folder.prototype = {
 
 			case ACCESSIBILITY_PARTIALLY:
 				files.forEach(function(v){
-					if(v.endsWith(FILE_INFO_EXTENSION)) fileObjects.push(getFile(v, fileSystem));
+					if(v.endsWith(FILE_INFO_EXTENSION)) fileObjects.push(getFile(path, v, fileSystem));
 				});
 
 				return fileObjects.filter(function(v){
@@ -125,7 +126,7 @@ Folder.prototype = {
 
 			case ACCESSIBILITY_YES:
 				return files.map(function(v){
-					return getFile(v, fileSystem);
+					return getFile(path, v, fileSystem);
 				});
 
 			default: return [];
@@ -171,8 +172,9 @@ this.prototype.getLocation = function(){
 this.prototype.listFiles = function(){
 	if(this.getAccessibility() === ACCESSIBILITY_NO) return;
 	var request = require('request');
+	var json = null;
 	request({
-		url: GITHUB_URL_BASE + this.author + "/" + this.project + "/releases?client_id=" + GITHUB_CLIENT_ID + "&client_secret=" + GITHUB_CLIENT_SECRET,
+		url: GITHUB_API_BASE + this.author + "/" + this.project + "/releases?client_id=" + GITHUB_CLIENT_ID + "&client_secret=" + GITHUB_CLIENT_SECRET,
 		headers: {
 			'User-Agent': 'Haesal'
 		}
@@ -181,14 +183,42 @@ this.prototype.listFiles = function(){
 		if(response !== 200) return;
 
 		JSON.parse(body).forEach(function(v){
-			//TODO implement github release request
+			json = v;
 		});
 
 	});
+
+	if(!json) return [];
+
+	return new CustomFileList("github", json["tag_name"], json["assets_url"], json["name"]);
+};
+
+function CustomFileList(handlerName, uniqueId, meta, name){
+	this.handlerName = handlerName;
+	this.listName = name;
+	this.meta = meta;
+	this.uniqueId = uniqueId;
+}
+
+CustomFileList.prototoype = {
+	getName: function(){
+		return this.listName;
+	},
+
+	getHandlerName: function(){
+		return this.handlerName;
+	},
+
+	getID: function(){
+		return this.uniqueId;
+	},
+
+	getMeta: function(){
+		return this.meta;
+	}
 };
 
 function getFolder(directory){
-
 	var fileSystem = require('fs');
 	var conf = defaultConfig;
 
@@ -207,22 +237,25 @@ function getFolder(directory){
 	}
 }
 
-function getFile(file, fs){
+function getFile(fileName, path, fs){
+	path += fileName;
+	if(fs.lstatSync(path).isDirectory()){
+		return getFolder(refineFolderPath(path));
+	}
 
+	return new File(path + fileName, fs);
+}
+
+function refineFolderPath(path){
+	if(path.charAt(path.length - 1) !== "/"){
+		return path + "/";
+	}
+
+	return path;
 }
 
 function getFolderName(url){
-	return '.' + url.split("?").splice(0, 1);
+	return refineFolderPath('.' + url.split("?").splice(0, 1));
 }
-
-/*function cherryPick(array1, array2){
-	array2.forEach(function f(v, k){
-		if(!array1.hasOwnProperty(k)){
-			array1[k] = v;
-		}
-	});
-
-	return array1;
-}*/
 
 module.exports = router;
