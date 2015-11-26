@@ -5,13 +5,7 @@ var router = express.Router();
 
 router.get('*', function(req, res){
 	var folderPath = getFolderPath(req.originalUrl);
-	var folder = null;
-
-	if(req.query.hasOwnProperty("list") && req.query.list === "true"){
-		folder = getCustomFileList(req.query.handler, req.query.uid, req.query.meta, req.query.name);
-	}else{
-		folder = getFolder(folderPath);
-	}
+	var folder = getFolder(folderPath);
 
 	if(!folder){
 		res.render('404');
