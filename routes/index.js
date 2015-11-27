@@ -1,29 +1,41 @@
-var express = require('express');
-var router = express.Router();
+var libExpress = require('express');
+var libAsync = require('async');
+var libMarked = require('marked');
+var libRequest = require('request');
+var libCheerio = require('cheerio');
+var libFs = require('fs');
+var libPath = require('path');
+
+var router = libExpress.Router();
 
 /* GET home page. */
 
 router.get('*', function(req, res){
 	var folderPath = getFolderPath(req.originalUrl);
-	var folder = getFolder(folderPath);
 
-	if(!folder){
-		res.render('404');
-		return;
-	}
+	getFolder(folderPath, function(folder){
+		if(!folder){
+			console.log("render404");
+			res.render('404');
+			return;
+		}
 
-	var listFiles = folder.listFiles();
-	var folderName = folder.getName();
+		folder.listFiles(function(returnValue){
+			var data = {
+				name: folder.getName(),
+				list: returnValue
+			};
 
-	if(req.query.hasOwnProperty("json") && req.query.json === "true"){
-		res.send(JSON.stringify({
-			name: folderName,
-			list: listFiles
-		}));
-		return;
-	}
+			if(req.query.hasOwnProperty("json") && req.query.json === "true"){
+				console.log("json");
+				res.json(data);
+				return;
+			}
 
-	res.render('index', {folderName: folderName, files: listFiles});
+			console.log("index");
+			res.render('index', data);
+		});
+	});
 });
 
 
@@ -33,6 +45,7 @@ const ACCESSIBILITY_YES = 2;
 
 const FOLDER_INFO = "folder.hsfin";
 const FILE_INFO_EXTENSION = ".hsinf";
+const MAIN_DIRECTORY = "./public/";
 
 const GITHUB_HANDLER_NAME = "github";
 const GITHUB_CLIENT_ID = "xxxx";
@@ -85,72 +98,101 @@ Folder.prototype = {
 		return this.name;
 	},
 
-	getIndex: function(){
+	getIndex: function(callback){
 		if(!this.config["index"]) return;
-
-		var fs = undefined;
-		var index = null;
 
 		switch(this.config["index-type"]){
 			case "markdown":
-				var marked = require('marked');
-				fs = require('fs');
+				libFs.readFile(this.config["index"], readConfig, function(err, data){
+					if(err){
+						callback(null);
+						return;
+					}
 
-				fs.readFile(this.config["index"], readConfig, function(err, data){
-					if(err) return;
-
-					index = marked(data);
+					callback(libMarked(data));
 				});
 				break;
 
 			case "html":
-				fs = require('fs');
+				libFs.readFile(this.config["index"], readConfig, function(err, data){
+					if(err){
+						callback(null);
+						return;
+					}
 
-				fs.readFile(this.config["index"], readConfig, function(err, data){
-					if(err) return;
-
-					index = data;
+					callback(data);
 				});
 				break;
-		}
 
-		return index;
+			default:
+				callback(null);
+				break;
+		}
 	},
 
 	getFolderType: function(){
 		return this.config["type"];
 	},
 
-	listFiles: function(fileSystem){
-		var files = [];
+	listFiles: function(callback){
 		var fileObjects = [];
 		var path = this.getPath();
+		var accessibility = this.getAccessibility();
 
-		fileSystem.readdir(this.getPath(), function(err, fileList){
-			if(err) return;
-			files = fileList;
+		libFs.readdir(path, function(err, files){
+			if(!files){
+				callback([]);
+				return;
+			}
+
+			switch(accessibility){
+				case ACCESSIBILITY_NO:
+					callback([]);
+					return;
+
+				case ACCESSIBILITY_PARTIALLY:
+					libAsync.each(function(v, asyncCallback){
+						libFs.stat(v, function(err, stat){
+							if(stat.isDirectory() || libPath.extname(v) === FILE_INFO_EXTENSION){
+								getFileOrFolder(v, path, function(file){
+									fileObjects.push(file);
+									asyncCallback();
+								});
+							}
+						});
+					}, function(err){
+						if(err){
+							callback([]);
+							return;
+						}
+
+						callback(fileObjects.filter(function(v){
+							return v !== null;
+						}));
+					});
+					break;
+
+				case ACCESSIBILITY_YES:
+					libAsync.map(files, function(v, asyncCallback){
+						getFileOrFolder(v, path, function(res){ 
+							asyncCallback(undefined, res);
+						});
+					}, function(err, res){
+						if(err){
+							callback([]);
+							return;
+						}
+
+						callback(res.filter(function(v){
+							return v !== null;
+						}));
+					});
+					break;
+
+				default: callback([]);
+					break;
+			}
 		});
-
-		switch(this.getAccessibility()){
-			case ACCESSIBILITY_NO: return [];
-
-			case ACCESSIBILITY_PARTIALLY:
-				files.forEach(function(v){
-					if(fileSystem.statSync(v).isDirectory()) fileObjects.push(getFolder(refineFolderPath(v)));
-					if(v.endsWith(FILE_INFO_EXTENSION)) fileObjects.push(getFile(path, v, fileSystem));
-				});
-
-				return fileObjects.filter(function(v){
-					return v !== null;
-				});
-
-			case ACCESSIBILITY_YES:
-				return files.map(function(v){
-					return getFileOrFolder(path, v, fileSystem);
-				});
-
-			default: return [];
-		}
 	}
 };
 
@@ -164,36 +206,38 @@ function GithubFolder(folder){
 	this.prototype = this._parent.prototype;
 }
 
-this.prototype.getIndex = function(){
-	var request = require('request');
-	var cheerio = require('cheerio');
+GithubFolder.prototype.getIndex = function(callback){
 	var index = null;
 
 	if(this.config["index-type"] !== GITHUB_HANDLER_NAME){
-		return this._parent.getIndex();
+		return this._parent.getIndex(callback);
 	}
 
-	request(this.location + "/blob/master/README.md", function(err, response, body){
-		if(err) return;
-		if(response !== 200) return;
+	libRequest(this.location + "/blob/master/README.md", function(err, response, body){
+		if(err || (response !== 200)){
+			callback(null);
+			return;
+		}
 
-		var $ = cheerio.load(body);
+		var $ = libCheerio.load(body);
 		var readme = $('#readme');
-		if(readme) index = readme.html();
-	});
+		if(readme){
+			callback(readme.html());
+			return;
+		}
 
-	return index;
+		callback(null);
+	});
 };
 
-this.prototype.getLocation = function(){
+GithubFolder.prototype.getLocation = function(){
 	return this.location;
 };
 
-this.prototype.listFiles = function(){
+GithubFolder.prototype.listFiles = function(callback){
 	if(this.getAccessibility() === ACCESSIBILITY_NO) return;
-	var request = require('request');
-	var json = null;
-	request({
+	var files = [];
+	libRequest({
 		url: GITHUB_API_BASE + this.author + "/" + this.project + "/releases?client_id=" + GITHUB_CLIENT_ID + "&client_secret=" + GITHUB_CLIENT_SECRET,
 		headers: {
 			'User-Agent': 'Haesal'
@@ -202,37 +246,35 @@ this.prototype.listFiles = function(){
 		if(err) return;
 		if(response !== 200) return;
 
-		JSON.parse(body).forEach(function(v){
-			json = v;
+		JSON.parse(body).forEach(function(json){
+			if(!json) return;
+
+			var index = libMarked(json["body"]);
+			var files = [];
+
+			json["assets"].forEach(function(v){
+				files.push(new File(v["name"], {
+					download: v["browser_download_url"]
+				}));
+			});
+
+			files.push(new File(json["name"] + ".zip", {
+				download: json["zipball_url"]
+			}));
+
+			files.push(new File(json["name"] + ".tar.gz", {
+				download: json["tarball_url"]
+			}));
+
+			files.push(new FileList(
+				json["name"],
+				files,
+				index
+			));
 		});
 
+		callback(files);
 	});
-
-	if(!json) return [];
-
-	var marked = require('marked');
-	var index = marked(json["body"]);
-	var files = [];
-
-	json["assets"].forEach(function(v){
-		files.push(new File(v["name"], {
-			download: v["browser_download_url"]
-		}));
-	});
-
-	files.push(new File(json["name"] + ".zip", {
-		download: json["zipball_url"]
-	}));
-
-	files.push(new File(json["name"] + ".tar.gz", {
-		download: json["tarball_url"]
-	}));
-
-	return new FileList(
-		json["name"],
-		files,
-		index
-	)
 };
 
 function FileList(name, files, index){
@@ -255,65 +297,82 @@ FileList.prototype = {
 	}
 };
 
-function getFolder(directory){
-	var fileSystem = require('fs');
-	var conf = defaultConfig;
+function getFolder(directory, callback){
+	libFs.readFile(FOLDER_INFO, readConfig, function(err, data){
+		var folder;
+		if(err){
+			folder = new Folder(directory, defaultConfig);
+		}else{
+			folder = new Folder(directory, JSON.parse(data));
+		}
 
-	fileSystem.readFile(FOLDER_INFO, readConfig, function(err, data){
-		if(err) return;
-
-		conf = JSON.parse(data);
+		switch(folder.getFolderType()){
+			case GITHUB_HANDLER_NAME: callback(new GithubFolder(folder)); break;
+			default: callback(folder);
+		}
 	});
-
-	var folder = new Folder(directory, conf);
-
-	switch(folder.getFolderType()){
-		case GITHUB_HANDLER_NAME: return new GithubFolder(folder);
-		default: return folder;
-	}
 }
 
-function getFile(fileName, path, fs){
-	path += fileName;
+function getFile(fileName, path, callback){
+	path = libPath.join(path, fileName);
 
-	var conf = {
-		download: path
-	};
+	libFs.readFile(path, readConfig, function(err, data){
+		if(err){
+			callback(new File(fileName, {
+				download: path
+			}));
+			return;
+		}
 
-	fs.readFile(path, readConfig, function(err, data){
-		if(err) return;
-		conf = JSON.parse(data);
+		callback(new File(fileName, JSON.parse(data)));
 	});
-
-	return new File(fileName, fs);
 }
 
-function getFileOrFolder(fileName, path, fs){
-	path += fileName;
+function getFileOrFolder(fileName, path, callback){
+	path = libPath.join(path, fileName);
 
-	if(fs.statSync(path).isDirectory()){
-		return getFolder(refineFolderPath(path));
-	}
+	libFs.stat(path, function(err, stats){
+		if(err){
+			callback(null);
+		}
 
-	return getFile(fileName, path, fs);
+		if(stats.isDirectory()){
+			getFolder(refineFolderPath(path), callback);
+			return;
+		}
+
+		getFile(fileName, path, callback);
+	});
 }
 
 function refineFolderPath(path){
-	path = path.replace("\\", "/");
+	if(libPath.sep === "\\"){
+		path = path.replace("/", "\\");
+	}else{
+		path = path.replace("\\", "/");
+	}
 
-	if(path.charAt(path.length - 1) !== "/"){
-		return path + "/";
+	if(path.charAt(path.length - 1) !== libPath.sep){
+		path += libPath.sep;
+	}
+
+	path = path.replace("." + libPath.sep, "").replace(".." + libPath.sep, "");
+
+	if(path.charAt(0) === libPath.sep){
+		path = "." + path;
+	}else{
+		path = "." + libPath.sep + path;
 	}
 
 	return path;
 }
 
 function getFolderPath(url){
-	return refineFolderPath('.' + url.split("?").splice(0, 1));
+	return refineFolderPath(libPath.join(MAIN_DIRECTORY, url.split("?").splice(0, 1)[0]));
 }
 
 function getFolderName(path){
-	var folders = path.split("/");
+	var folders = path.split(libPath.sep);
 	return folders[folders.length - 1];
 }
 
