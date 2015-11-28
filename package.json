@@ -12,6 +12,7 @@
     "ejs": "~2.3.4",
     "express": "~4.13.1",
     "marked": "^0.3.5",
+    "minimatch": "^3.0.0",
     "morgan": "~1.6.1",
     "request": "^2.67.0",
     "serve-favicon": "~2.3.0"

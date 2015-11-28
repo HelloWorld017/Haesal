@@ -1,3 +1,4 @@
 .idea/
 winpty.exe.stackdump
 node_modules/
+public/downloads/

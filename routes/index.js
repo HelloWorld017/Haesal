@@ -1,21 +1,19 @@
-var libExpress = require('express');
 var libAsync = require('async');
-var libMarked = require('marked');
-var libRequest = require('request');
 var libCheerio = require('cheerio');
+var libExpress = require('express');
 var libFs = require('fs');
+var libMarked = require('marked');
+var libMinimatch = require('minimatch');
 var libPath = require('path');
+var libRequest = require('request');
 
 var router = libExpress.Router();
-
-/* GET home page. */
 
 router.get('*', function(req, res){
 	var folderPath = getFolderPath(req.originalUrl);
 
 	getFolder(folderPath, function(folder){
 		if(!folder){
-			console.log("render404");
 			res.render('404');
 			return;
 		}
@@ -27,12 +25,10 @@ router.get('*', function(req, res){
 			};
 
 			if(req.query.hasOwnProperty("json") && req.query.json === "true"){
-				console.log("json");
 				res.json(data);
 				return;
 			}
 
-			console.log("index");
 			res.render('index', data);
 		});
 	});
@@ -42,10 +38,12 @@ router.get('*', function(req, res){
 const ACCESSIBILITY_NO = 0;
 const ACCESSIBILITY_PARTIALLY = 1;
 const ACCESSIBILITY_YES = 2;
+const ACCESSIBILITY_NEGATIVE_PARTIALLY = 3;
 
-const FOLDER_INFO = "folder.hsfin";
-const FILE_INFO_EXTENSION = ".hsinf";
+const FOLDER_INFO = "folder.hsdin";
+const FILE_INFO_EXTENSION = ".hsfin";
 const MAIN_DIRECTORY = "./public/";
+const EXCLUSION_FILE = "./exclusion.hsfin";
 
 const GITHUB_HANDLER_NAME = "github";
 const GITHUB_CLIENT_ID = "xxxx";
@@ -74,7 +72,19 @@ File.prototype = {
 	},
 
 	getDownloadURL: function(){
-		return this.config["download"];
+		var download = this.config["download"].replace("\\", "/");
+		if(download.charAt(0) === "/") download = download.substr(1);
+		return download;
+	},
+
+	getPath: function(){
+		var download = this.config["download"];
+
+		if(download.charAt(0) === libPath.sep){
+			download = "." + download;
+		}
+
+		return download;
 	}
 };
 
@@ -151,13 +161,30 @@ Folder.prototype = {
 					return;
 
 				case ACCESSIBILITY_PARTIALLY:
-					libAsync.each(function(v, asyncCallback){
-						libFs.stat(v, function(err, stat){
-							if(stat.isDirectory() || libPath.extname(v) === FILE_INFO_EXTENSION){
-								getFileOrFolder(v, path, function(file){
-									fileObjects.push(file);
+					libAsync.each(files, function(v, asyncCallback){
+						libFs.stat(libPath.join(path, v), function(err, stat){
+							if(err){
+								asyncCallback();
+							}
+
+							if(stat.isDirectory()){
+								getFile(v, path, function(folder){
+									fileObjects.push(folder);
 									asyncCallback();
 								});
+							}else if(libPath.extname(v) === FILE_INFO_EXTENSION){
+								libFs.readFile(libPath.join(path, v), readConfig, function(err, data){
+									if(err){
+										asyncCallback();
+										return;
+									}
+									var json = JSON.parse(data);
+									//Although it is a file, I used getFolderName because the algorithm is same.
+									fileObjects.push((new File(getFolderName(json["download"]), json)));
+									asyncCallback();
+								});
+							}else{
+								asyncCallback();
 							}
 						});
 					}, function(err){
@@ -170,10 +197,16 @@ Folder.prototype = {
 							return v !== null;
 						}));
 					});
+
 					break;
 
 				case ACCESSIBILITY_YES:
 					libAsync.map(files, function(v, asyncCallback){
+						if(v === FOLDER_INFO){
+							asyncCallback(undefined, null);
+							return;
+						}
+
 						getFileOrFolder(v, path, function(res){ 
 							asyncCallback(undefined, res);
 						});
@@ -189,6 +222,64 @@ Folder.prototype = {
 					});
 					break;
 
+				case ACCESSIBILITY_NEGATIVE_PARTIALLY:
+					libAsync.map(files, function(v, asyncCallback){
+						if(v === FOLDER_INFO){
+							asyncCallback(undefined, null);
+							return;
+						}
+
+						getFileOrFolder(v, path, function(res){
+							asyncCallback(undefined, res);
+						});
+					}, function(err, res){
+						if(err){
+							callback([]);
+							return;
+						}
+
+						libFs.readFile(EXCLUSION_FILE, readConfig, function(err, data){
+							if(err){
+								callback([]);
+								return;
+							}
+
+							var exclusions = data.split(/\r|\n/).filter(function(v){
+								return v !== '';
+							});
+
+							async.filter(res, function(v, filterCallback){
+								if(v === null) return false;
+
+								var canSend = true;
+								libAsync.each(exclusions, function(exclusion, asyncCallback){
+									if(!libMinimatch(v.getPath(), exclusion, {
+										matchBase: true,
+										dot: true,
+										nocase: true
+									})) canSend = false;
+
+									asyncCallback();
+								}, function(err){
+									if(err){
+										filterCallback(false);
+										return;
+									}
+
+									filterCallback(canSend);
+								});
+							}, function(err, res){
+								if(err){
+									callback([]);
+									return;
+								}
+
+								callback(res);
+							});
+						});
+					});
+					break;
+
 				default: callback([]);
 					break;
 			}
@@ -201,20 +292,22 @@ function GithubFolder(folder){
 	this.config = folder.config;
 	this.project = this.config["github-project"];
 	this.author = this.config["github-author"];
+	this.name = this.project;
 	this.location = GITHUB_URL_BASE + this.author + "/" + this.project;
-	this._parent = folder;
-	this.prototype = this._parent.prototype;
+	this.__parent = folder;
 }
+
+GithubFolder.prototype = Object.create(Folder.prototype);
 
 GithubFolder.prototype.getIndex = function(callback){
 	var index = null;
 
 	if(this.config["index-type"] !== GITHUB_HANDLER_NAME){
-		return this._parent.getIndex(callback);
+		return this.__parent.getIndex(callback);
 	}
 
 	libRequest(this.location + "/blob/master/README.md", function(err, response, body){
-		if(err || (response !== 200)){
+		if(err || (response.statusCode !== 200)){
 			callback(null);
 			return;
 		}
@@ -236,18 +329,25 @@ GithubFolder.prototype.getLocation = function(){
 
 GithubFolder.prototype.listFiles = function(callback){
 	if(this.getAccessibility() === ACCESSIBILITY_NO) return;
-	var files = [];
+
 	libRequest({
 		url: GITHUB_API_BASE + this.author + "/" + this.project + "/releases?client_id=" + GITHUB_CLIENT_ID + "&client_secret=" + GITHUB_CLIENT_SECRET,
 		headers: {
 			'User-Agent': 'Haesal'
 		}
 	}, function(err, response, body){
-		if(err) return;
-		if(response !== 200) return;
+		if(err || response.statusCode !== 200){
+			callback([]);
+			return;
+		}
 
-		JSON.parse(body).forEach(function(json){
-			if(!json) return;
+		var lists = [];
+
+		libAsync.each(JSON.parse(body), function(json, asyncCallback){
+			if(!json){
+				asyncCallback();
+				return;
+			}
 
 			var index = libMarked(json["body"]);
 			var files = [];
@@ -266,14 +366,22 @@ GithubFolder.prototype.listFiles = function(callback){
 				download: json["tarball_url"]
 			}));
 
-			files.push(new FileList(
+			lists.push(new FileList(
 				json["name"],
 				files,
 				index
 			));
-		});
 
-		callback(files);
+			asyncCallback();
+
+		}, function(err){
+			if(err){
+				callback([]);
+				return;
+			}
+
+			callback(lists);
+		});
 	});
 };
 
@@ -298,7 +406,7 @@ FileList.prototype = {
 };
 
 function getFolder(directory, callback){
-	libFs.readFile(FOLDER_INFO, readConfig, function(err, data){
+	libFs.readFile(libPath.join(directory, FOLDER_INFO), readConfig, function(err, data){
 		var folder;
 		if(err){
 			folder = new Folder(directory, defaultConfig);
@@ -372,7 +480,10 @@ function getFolderPath(url){
 }
 
 function getFolderName(path){
-	var folders = path.split(libPath.sep);
+	var folders = path.split(libPath.sep).filter(function(v){
+		return v !== '';
+	});
+
 	return folders[folders.length - 1];
 }
 
