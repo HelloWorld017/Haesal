@@ -7,6 +7,8 @@ var libMinimatch = require('minimatch');
 var libPath = require('path');
 var libRequest = require('request');
 
+var config = require('../config');
+
 var router = libExpress.Router();
 
 router.get('*', function(req, res){
@@ -40,17 +42,10 @@ const ACCESSIBILITY_PARTIALLY = 1;
 const ACCESSIBILITY_YES = 2;
 const ACCESSIBILITY_NEGATIVE_PARTIALLY = 3;
 
-const FOLDER_INFO = "folder.hsdin";
-const FILE_INFO_EXTENSION = ".hsfin";
-const MAIN_DIRECTORY = "./public/";
-const EXCLUSION_FILE = "./exclusion.hsfin";
-
-const GITHUB_HANDLER_NAME = "github";
-const GITHUB_CLIENT_ID = "xxxx";
-const GITHUB_CLIENT_SECRET = "yyyy";
 const GITHUB_API_BASE = "https://api.github.com/repos/";
 const GITHUB_URL_BASE = "https://github.com/";
 
+const GITHUB_HANDLER_NAME = "github";
 const LIST_HANDLER_NAME = "list";
 
 var defaultConfig = {
@@ -178,7 +173,7 @@ Folder.prototype = {
 									fileObjects.push(folder);
 									asyncCallback();
 								});
-							}else if(libPath.extname(v) === FILE_INFO_EXTENSION){
+							}else if(libPath.extname(v) === config.file_ext){
 								libFs.readFile(libPath.join(path, v), readConfig, function(err, data){
 									if(err){
 										asyncCallback();
@@ -208,7 +203,7 @@ Folder.prototype = {
 
 				case ACCESSIBILITY_YES:
 					libAsync.map(files, function(v, asyncCallback){
-						if(v === FOLDER_INFO){
+						if(v === config.folder_name){
 							asyncCallback(undefined, null);
 							return;
 						}
@@ -230,7 +225,7 @@ Folder.prototype = {
 
 				case ACCESSIBILITY_NEGATIVE_PARTIALLY:
 					libAsync.map(files, function(v, asyncCallback){
-						if(v === FOLDER_INFO){
+						if(v === config.folder_name){
 							asyncCallback(undefined, null);
 							return;
 						}
@@ -244,7 +239,7 @@ Folder.prototype = {
 							return;
 						}
 
-						libFs.readFile(EXCLUSION_FILE, readConfig, function(err, data){
+						libFs.readFile(config.exclusion_name, readConfig, function(err, data){
 							if(err){
 								callback([]);
 								return;
@@ -340,8 +335,11 @@ GithubFolder.prototype.getLocation = function(){
 GithubFolder.prototype.listFiles = function(callback){
 	if(this.getAccessibility() === ACCESSIBILITY_NO) return;
 
+	var url = GITHUB_API_BASE + this.author + "/" + this.project + "/releases";
+	if(config.github.use_api_key) url += "?client_id" + config.github.client_id + "&client_secret" + config.github.client_secret;
+
 	libRequest({
-		url: GITHUB_API_BASE + this.author + "/" + this.project + "/releases?client_id=" + GITHUB_CLIENT_ID + "&client_secret=" + GITHUB_CLIENT_SECRET,
+		url: url,
 		headers: {
 			'User-Agent': 'Haesal'
 		}
@@ -443,7 +441,7 @@ FileList.prototype = {
 };
 
 function getFolder(directory, callback){
-	libFs.readFile(libPath.join(directory, FOLDER_INFO), readConfig, function(err, data){
+	libFs.readFile(libPath.join(directory, config.folder_name), readConfig, function(err, data){
 		var folder;
 		if(err){
 			folder = new Folder(directory, defaultConfig);
@@ -514,7 +512,7 @@ function refineFolderPath(path){
 }
 
 function getFolderPath(url){
-	return refineFolderPath(libPath.join(MAIN_DIRECTORY, url.split("?").splice(0, 1)[0]));
+	return refineFolderPath(libPath.join(config.main_directory, url.split("?").splice(0, 1)[0]));
 }
 
 function getFolderName(path){
