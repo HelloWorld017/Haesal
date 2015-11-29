@@ -51,6 +51,8 @@ const GITHUB_CLIENT_SECRET = "yyyy";
 const GITHUB_API_BASE = "https://api.github.com/repos/";
 const GITHUB_URL_BASE = "https://github.com/";
 
+const LIST_HANDLER_NAME = "list";
+
 var defaultConfig = {
 	accessibility: ACCESSIBILITY_YES,
 	index: false,
@@ -85,6 +87,10 @@ File.prototype = {
 		}
 
 		return download;
+	},
+
+	isFile: function(){
+		return true;
 	}
 };
 
@@ -248,7 +254,7 @@ Folder.prototype = {
 								return v !== '';
 							});
 
-							async.filter(res, function(v, filterCallback){
+							libAsync.filter(res, function(v, filterCallback){
 								if(v === null) return false;
 
 								var canSend = true;
@@ -284,6 +290,10 @@ Folder.prototype = {
 					break;
 			}
 		});
+	},
+
+	isFile: function(){
+		return false;
 	}
 };
 
@@ -385,6 +395,33 @@ GithubFolder.prototype.listFiles = function(callback){
 	});
 };
 
+function ListFolder(folder){
+	this.path = folder.path;
+	this.config = folder.config;
+	this.name = folder.name;
+	this.__parent = folder;
+}
+
+ListFolder.prototype = Object.create(Folder.prototype);
+
+ListFolder.prototype.listFiles = function(callback){
+	this.__parent.listFiles(function(v){
+		libAsync.map(v, function(fileOrFolder, asyncCallback){
+			if(!fileOrFolder.isFile()){
+				fileOrFolder.listFiles(function(list){
+					asyncCallback(undefined, new FileList(fileOrFolder.getName(), list, fileOrFolder.getIndex()));
+				});
+
+				return;
+			}
+
+			asyncCallback(undefined, fileOrFolder);
+		}, function(err, res){
+			callback(res);
+		});
+	});
+};
+
 function FileList(name, files, index){
 	this.name = name;
 	this.files = files;
@@ -416,6 +453,7 @@ function getFolder(directory, callback){
 
 		switch(folder.getFolderType()){
 			case GITHUB_HANDLER_NAME: callback(new GithubFolder(folder)); break;
+			case LIST_HANDLER_NAME: callback(new ListFolder(folder)); break;
 			default: callback(folder);
 		}
 	});
