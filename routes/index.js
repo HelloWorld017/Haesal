@@ -458,15 +458,25 @@ function getFolder(directory, callback){
 function getFile(fileName, path, callback){
 	path = libPath.join(path, fileName);
 
+	var defaultFileConfig = {
+		download: path
+	};
+
+	if(libPath.extname(fileName) !== config.file_ext){
+		callback(new File(fileName, defaultFileConfig));
+		return;
+	}
+
 	libFs.readFile(path, readConfig, function(err, data){
 		if(err){
-			callback(new File(fileName, {
-				download: path
-			}));
+			callback(new File(fileName, defaultFileConfig));
 			return;
 		}
-
-		callback(new File(fileName, JSON.parse(data)));
+		try {
+			callback(new File(fileName, JSON.parse(data)));
+		}catch(e){
+			callback(new File(fileName, defaultFileConfig));
+		}
 	});
 }
 

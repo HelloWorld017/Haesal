@@ -84,7 +84,8 @@ describe('Testing Haesal', function() {
 							}
 						]
 					}));
-				})
+				});
+			done();
 		});
 	});
 
@@ -131,6 +132,7 @@ describe('Testing Haesal', function() {
 							]
 						}));
 					});
+					done();
 			});
 		});
 
@@ -179,7 +181,7 @@ describe('Testing Haesal', function() {
 				request(app)
 					.get('/LocalNPartially/')
 					.expect(200)
-					.end(function(err, res){
+					.end(function(err){
 						should.not.exist(err);
 						done();
 					});
