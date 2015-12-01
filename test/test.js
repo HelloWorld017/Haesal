@@ -44,7 +44,7 @@ describe('Testing Haesal', function() {
 				.expect(200)
 				.end(function(err, res){
 					should.not.exist(err);
-					should.strictEqual(res, JSON.stringify({
+					should.strictEqual(res.text, JSON.stringify({
 						"name":"List",
 						"path":["List"],
 						"list":[
@@ -52,15 +52,9 @@ describe('Testing Haesal', function() {
 								"name":"List1",
 								"files":[
 									{
-										"name":"foo.hsfin",
-										"config":{
-											"download":"test\\List\\List1\\foo.hsfin\\foo.hsfin"
-										}
-									},
-									{
 										"name":"foo.txt",
 										"config":{
-											"download":"test\\List\\List1\\foo.txt\\foo.txt"
+											"download":"test\\List\\List1\\foo.txt"
 										}
 									}
 								]
@@ -69,15 +63,9 @@ describe('Testing Haesal', function() {
 								"name":"List2",
 								"files":[
 									{
-										"name":"foo.hsfin",
-										"config":{
-											"download":"test\\List\\List2\\foo.hsfin\\foo.hsfin"
-										}
-									},
-									{
 										"name":"foo.txt",
 										"config":{
-											"download":"test\\List\\List2\\foo.txt\\foo.txt"
+											"download":"test\\List\\List2\\foo.txt"
 										}
 									}
 								]
@@ -119,7 +107,7 @@ describe('Testing Haesal', function() {
 					.expect(200)
 					.end(function(err, res){
 						should.not.exist(err);
-						should.strictEqual(res, JSON.stringify({
+						should.strictEqual(res.text, JSON.stringify({
 							"name":"LocalPartially",
 							"path":["LocalPartially"],
 							"list":[
@@ -153,16 +141,10 @@ describe('Testing Haesal', function() {
 					.expect(200)
 					.end(function(err, res){
 						should.not.exist(err);
-						should.strictEqual(res, JSON.stringify({
+						should.strictEqual(res.text, JSON.stringify({
 							"name":"LocalYes",
 							"path":["LocalYes"],
 							"list":[
-								{
-									"name":"foo.hsfin",
-									"config":{
-										"download":"test\\LocalYes\\foo.hsfin"
-									}
-								},
 								{
 									"name":"foo.txt",
 									"config":{
@@ -193,7 +175,7 @@ describe('Testing Haesal', function() {
 					.expect(200)
 					.end(function(err, res){
 						should.not.exist(err);
-						should.strictEqual(res, JSON.stringify({
+						should.strictEqual(res.text, JSON.stringify({
 							"name":"LocalNPartially",
 							"path":["LocalNPartially"],
 							"list":[

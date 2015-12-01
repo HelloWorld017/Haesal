@@ -538,7 +538,16 @@ function getFolderName(path){
 
 function getPathList(path, sep){
 	if(sep === undefined) sep = libPath.sep;
-	return path.split(sep).filter(function(v){
+	var pathList = [];
+
+	if(sep === true){
+		pathList =  path.split("\\").join("/").split("/");
+	}else{
+		pathList = path.split(sep);
+	}
+
+
+	return pathList.filter(function(v){
 		return ((v !== '') && (v !== '.') && (v !== '..'));
 	});
 }
@@ -546,10 +555,10 @@ function getPathList(path, sep){
 function removeHomeDir(path){
 	var split;
 
-	if(typeof path === "string") split = getPathList(path);
+	if(typeof path === "string") split = getPathList(path, true);
 	else split = path;
 
-	var homeSplit = getPathList(config.main_directory);
+	var homeSplit = getPathList(config.main_directory, true);
 
 	var index = 0;
 
