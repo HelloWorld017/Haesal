@@ -265,15 +265,13 @@ Folder.prototype = {
 							});
 							var manymatch = new libManymatch(exclusions);
 
-							console.log(exclusions);
 							libAsync.filter(res, function(fileObj, filterCallback){
 								if(fileObj === null){
 									filterCallback(false);
 									return;
 								}
 
-								console.log(manymatch.match(fileObj.getPath()) + ":" + fileObj.getPath());
-								filterCallback(!manymatch.match(fileObj.getPath()));
+								filterCallback(!manymatch.match(fileObj.getPath().substr(1)));
 							}, function(res){
 								callback(res);
 							});
@@ -473,15 +471,15 @@ function getFile(fileName, path, callback){
 }
 
 function getFileOrFolder(fileName, path, callback){
-	path = libPath.join(path, fileName);
+	var fpath = libPath.join(path, fileName);
 
-	libFs.stat(path, function(err, stats){
+	libFs.stat(fpath, function(err, stats){
 		if(err){
 			callback(null);
 		}
 
 		if(stats.isDirectory()){
-			getFolder(refineFolderPath(path), callback);
+			getFolder(refineFolderPath(fpath), callback);
 			return;
 		}
 
