@@ -3,7 +3,7 @@ var libCheerio = require('cheerio');
 var libExpress = require('express');
 var libFs = require('fs');
 var libMarked = require('marked');
-var libMinimatch = require('minimatch');
+var libManymatch = require('manymatch');
 var libPath = require('path');
 var libRequest = require('request');
 
@@ -13,20 +13,33 @@ var router = libExpress.Router();
 
 router.get('*', function(req, res){
 	var folderPath = getFolderPath(req.originalUrl);
+	var isJSON = (req.query.hasOwnProperty("json") && req.query.json === "true");
 
 	getFolder(folderPath, function(folder){
 		if(!folder){
+			res.statusCode = 404;
 			res.render('404');
+			return;
+		}
+
+		if(folder.getAccessibility() === ACCESSIBILITY_NO){
+			res.statusCode = 403;
+			if(isJSON){
+				res.json([]);
+				return;
+			}
+			res.render('403');
 			return;
 		}
 
 		folder.listFiles(function(returnValue){
 			var data = {
 				name: folder.getName(),
+				path: getPathList(folder.getPath()),
 				list: returnValue
 			};
 
-			if(req.query.hasOwnProperty("json") && req.query.json === "true"){
+			if(isJSON){
 				res.json(data);
 				return;
 			}
@@ -79,6 +92,8 @@ File.prototype = {
 
 		if(download.charAt(0) === libPath.sep){
 			download = "." + download;
+		}else{
+			download = "." + libPath.sep + download;
 		}
 
 		return download;
@@ -208,7 +223,7 @@ Folder.prototype = {
 							return;
 						}
 
-						getFileOrFolder(v, path, function(res){ 
+						getFileOrFolder(v, path, function(res){
 							asyncCallback(undefined, res);
 						});
 					}, function(err, res){
@@ -248,33 +263,18 @@ Folder.prototype = {
 							var exclusions = data.split(/\r|\n/).filter(function(v){
 								return v !== '';
 							});
+							var manymatch = new libManymatch(exclusions);
 
-							libAsync.filter(res, function(v, filterCallback){
-								if(v === null) return false;
-
-								var canSend = true;
-								libAsync.each(exclusions, function(exclusion, asyncCallback){
-									if(!libMinimatch(v.getPath(), exclusion, {
-										matchBase: true,
-										dot: true,
-										nocase: true
-									})) canSend = false;
-
-									asyncCallback();
-								}, function(err){
-									if(err){
-										filterCallback(false);
-										return;
-									}
-
-									filterCallback(canSend);
-								});
-							}, function(err, res){
-								if(err){
-									callback([]);
+							console.log(exclusions);
+							libAsync.filter(res, function(fileObj, filterCallback){
+								if(fileObj === null){
+									filterCallback(false);
 									return;
 								}
 
+								console.log(manymatch.match(fileObj.getPath()) + ":" + fileObj.getPath());
+								filterCallback(!manymatch.match(fileObj.getPath()));
+							}, function(res){
 								callback(res);
 							});
 						});
@@ -516,11 +516,15 @@ function getFolderPath(url){
 }
 
 function getFolderName(path){
-	var folders = path.split(libPath.sep).filter(function(v){
-		return v !== '';
-	});
+	var folders = getPathList(path);
 
 	return folders[folders.length - 1];
+}
+
+function getPathList(path){
+	return path.split(libPath.sep).filter(function(v){
+		return ((v !== '') && (v !== '.') && (v !== '..'));
+	});
 }
 
 module.exports = router;

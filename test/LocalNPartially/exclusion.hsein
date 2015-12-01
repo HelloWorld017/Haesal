@@ -1,3 +1,4 @@
-*.hsein
-foo.*
-Excluded/
+**\*.hsein
+**\*.hsfin
+**\foo.*
+**\Excluded
