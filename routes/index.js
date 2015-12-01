@@ -35,7 +35,7 @@ router.get('*', function(req, res){
 		folder.listFiles(function(returnValue){
 			var data = {
 				name: folder.getName(),
-				path: getPathList(folder.getPath()),
+				path: removeHomeDir(getPathList(folder.getPath())),
 				list: returnValue
 			};
 
@@ -49,27 +49,19 @@ router.get('*', function(req, res){
 	});
 });
 
-
 const ACCESSIBILITY_NO = 0;
 const ACCESSIBILITY_PARTIALLY = 1;
 const ACCESSIBILITY_YES = 2;
 const ACCESSIBILITY_NEGATIVE_PARTIALLY = 3;
+
+const FILE_TYPE_LOCAL = 0;
+const FILE_TYPE_REMOTE = 1;
 
 const GITHUB_API_BASE = "https://api.github.com/repos/";
 const GITHUB_URL_BASE = "https://github.com/";
 
 const GITHUB_HANDLER_NAME = "github";
 const LIST_HANDLER_NAME = "list";
-
-var defaultConfig = {
-	accessibility: ACCESSIBILITY_YES,
-	index: false,
-	type: "local"
-};
-
-var readConfig = {
-	encoding: "UTF-8"
-};
 
 function File(name, config){
 	this.name = name;
@@ -82,13 +74,17 @@ File.prototype = {
 	},
 
 	getDownloadURL: function(){
+		if(this.getType() === FILE_TYPE_REMOTE) return this.config["download"];
+
 		var download = this.config["download"].replace("\\", "/");
-		if(download.charAt(0) === "/") download = download.substr(1);
-		return download;
+		if (download.charAt(0) === "/") download = download.substr(1);
+		return removeHomeDir(download);
 	},
 
 	getPath: function(){
 		var download = this.config["download"];
+
+		if(this.getType() === FILE_TYPE_REMOTE) return download;
 
 		if(download.charAt(0) === libPath.sep){
 			download = "." + download;
@@ -97,6 +93,14 @@ File.prototype = {
 		}
 
 		return download;
+	},
+
+	getType: function(){
+		if(this.config.hasOwnProperty("type")){
+			return this.config["type"];
+		}
+
+		return FILE_TYPE_LOCAL;
 	},
 
 	isFile: function(){
@@ -129,7 +133,7 @@ Folder.prototype = {
 
 		switch(this.config["index-type"]){
 			case "markdown":
-				libFs.readFile(this.config["index"], readConfig, function(err, data){
+				libFs.readFile(this.config["index"], config.read_config, function(err, data){
 					if(err){
 						callback(null);
 						return;
@@ -140,7 +144,7 @@ Folder.prototype = {
 				break;
 
 			case "html":
-				libFs.readFile(this.config["index"], readConfig, function(err, data){
+				libFs.readFile(this.config["index"], config.read_config, function(err, data){
 					if(err){
 						callback(null);
 						return;
@@ -189,7 +193,7 @@ Folder.prototype = {
 									asyncCallback();
 								});
 							}else if(libPath.extname(v) === config.file_ext){
-								libFs.readFile(libPath.join(path, v), readConfig, function(err, data){
+								libFs.readFile(libPath.join(path, v), config.read_config, function(err, data){
 									if(err){
 										asyncCallback();
 										return;
@@ -254,7 +258,7 @@ Folder.prototype = {
 							return;
 						}
 
-						libFs.readFile(config.exclusion_name, readConfig, function(err, data){
+						libFs.readFile(config.exclusion_name, config.read_config, function(err, data){
 							if(err){
 								callback([]);
 								return;
@@ -360,16 +364,19 @@ GithubFolder.prototype.listFiles = function(callback){
 
 			json["assets"].forEach(function(v){
 				files.push(new File(v["name"], {
-					download: v["browser_download_url"]
+					download: v["browser_download_url"],
+					type: FILE_TYPE_REMOTE
 				}));
 			});
 
 			files.push(new File(json["name"] + ".zip", {
-				download: json["zipball_url"]
+				download: json["zipball_url"],
+				type: FILE_TYPE_REMOTE
 			}));
 
 			files.push(new File(json["name"] + ".tar.gz", {
-				download: json["tarball_url"]
+				download: json["tarball_url"],
+				type: FILE_TYPE_REMOTE
 			}));
 
 			lists.push(new FileList(
@@ -439,10 +446,10 @@ FileList.prototype = {
 };
 
 function getFolder(directory, callback){
-	libFs.readFile(libPath.join(directory, config.folder_name), readConfig, function(err, data){
+	libFs.readFile(libPath.join(directory, config.folder_name), config.read_config, function(err, data){
 		var folder;
 		if(err){
-			folder = new Folder(directory, defaultConfig);
+			folder = new Folder(directory, config.default_config);
 		}else{
 			folder = new Folder(directory, JSON.parse(data));
 		}
@@ -467,7 +474,7 @@ function getFile(fileName, path, callback){
 		return;
 	}
 
-	libFs.readFile(path, readConfig, function(err, data){
+	libFs.readFile(path, config.read_config, function(err, data){
 		if(err){
 			callback(new File(fileName, defaultFileConfig));
 			return;
@@ -529,9 +536,33 @@ function getFolderName(path){
 	return folders[folders.length - 1];
 }
 
-function getPathList(path){
-	return path.split(libPath.sep).filter(function(v){
+function getPathList(path, sep){
+	if(sep === undefined) sep = libPath.sep;
+	return path.split(sep).filter(function(v){
 		return ((v !== '') && (v !== '.') && (v !== '..'));
+	});
+}
+
+function removeHomeDir(path){
+	var split;
+
+	if(typeof path === "string") split = getPathList(path);
+	else split = path;
+
+	var homeSplit = getPathList(config.main_directory);
+
+	var index = 0;
+
+	return split.filter(function(v){
+		if(index === -1) return true;
+
+		if(v === homeSplit[index]){
+			index++;
+			return true;
+		}else{
+			index = -1;
+			return false;
+		}
 	});
 }
 

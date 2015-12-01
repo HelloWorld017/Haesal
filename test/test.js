@@ -46,7 +46,7 @@ describe('Testing Haesal', function() {
 					should.not.exist(err);
 					should.strictEqual(res, JSON.stringify({
 						"name":"List",
-						"path":["test","List"],
+						"path":["List"],
 						"list":[
 							{
 								"name":"List1",
@@ -84,8 +84,8 @@ describe('Testing Haesal', function() {
 							}
 						]
 					}));
+					done();
 				});
-			done();
 		});
 	});
 
@@ -121,7 +121,7 @@ describe('Testing Haesal', function() {
 						should.not.exist(err);
 						should.strictEqual(res, JSON.stringify({
 							"name":"LocalPartially",
-							"path":["test","LocalPartially"],
+							"path":["LocalPartially"],
 							"list":[
 								{
 									"name":"foo.txt",
@@ -131,8 +131,8 @@ describe('Testing Haesal', function() {
 								}
 							]
 						}));
+						done();
 					});
-					done();
 			});
 		});
 
@@ -155,7 +155,7 @@ describe('Testing Haesal', function() {
 						should.not.exist(err);
 						should.strictEqual(res, JSON.stringify({
 							"name":"LocalYes",
-							"path":["test","LocalYes"],
+							"path":["LocalYes"],
 							"list":[
 								{
 									"name":"foo.hsfin",
@@ -195,7 +195,7 @@ describe('Testing Haesal', function() {
 						should.not.exist(err);
 						should.strictEqual(res, JSON.stringify({
 							"name":"LocalNPartially",
-							"path":["test","LocalNPartially"],
+							"path":["LocalNPartially"],
 							"list":[
 								{
 									"name":"bar.txt",
