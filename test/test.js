@@ -1,6 +1,7 @@
 var request = require('supertest'),
 	app = require('../app'),
-	should = require('should');
+	should = require('should'),
+	path = require('path');
 
 describe('Testing Haesal', function() {
 	var server;
@@ -54,7 +55,7 @@ describe('Testing Haesal', function() {
 									{
 										"name":"foo.txt",
 										"config":{
-											"download":"test\\List\\List1\\foo.txt"
+											"download":path.join("test", "List", "List1", "foo.txt")
 										}
 									}
 								]
@@ -65,7 +66,7 @@ describe('Testing Haesal', function() {
 									{
 										"name":"foo.txt",
 										"config":{
-											"download":"test\\List\\List2\\foo.txt"
+											"download":path.join("test", "List", "List2", "foo.txt")
 										}
 									}
 								]
@@ -114,7 +115,7 @@ describe('Testing Haesal', function() {
 								{
 									"name":"foo.txt",
 									"config":{
-										"download":"\\downloads\\Test\\foo.txt"
+										"download":path.join("downloads", "Test", "foo.txt")
 									}
 								}
 							]
@@ -148,7 +149,7 @@ describe('Testing Haesal', function() {
 								{
 									"name":"foo.txt",
 									"config":{
-										"download":"test\\LocalYes\\foo.txt"
+										"download":path.join("test", "LocalYes", "foo.txt")
 									}
 								}
 							]
@@ -182,13 +183,13 @@ describe('Testing Haesal', function() {
 								{
 									"name":"bar.txt",
 									"config":{
-										"download":"test\\LocalNPartially\\bar.txt"
+										"download":path.join("test", "LocalNPartially", "bar.txt")
 									}
 								},
 								{
 									"name":"index-test.md",
 									"config":{
-										"download":"test\\LocalNPartially\\index-test.md"
+										"download":path.join("test", "LocalNPartially", "index-test.md")
 									}
 								}
 							]
