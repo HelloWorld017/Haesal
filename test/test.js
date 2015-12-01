@@ -42,7 +42,7 @@ describe('Testing Haesal', function() {
 			request(app)
 				.get('/List/?json=true')
 				.expect(200)
-				.end(function(err){
+				.end(function(err, res){
 					should.not.exist(err);
 					should.strictEqual(res, JSON.stringify({
 						"name":"List",

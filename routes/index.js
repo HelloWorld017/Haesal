@@ -558,10 +558,10 @@ function removeHomeDir(path){
 
 		if(v === homeSplit[index]){
 			index++;
-			return true;
+			return false;
 		}else{
 			index = -1;
-			return false;
+			return true;
 		}
 	});
 }
