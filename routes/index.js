@@ -1,6 +1,5 @@
 var libAsync = require('async');
 var libCheerio = require('cheerio');
-var libExpress = require('express');
 var libFs = require('fs');
 var libMarked = require('marked');
 var libManymatch = require('manymatch');
@@ -9,45 +8,47 @@ var libRequest = require('request');
 
 var config = require('../config');
 
-var router = libExpress.Router();
-
-router.get('*', function(req, res){
+module.exports = function(req, callback){
 	var folderPath = getFolderPath(req.originalUrl);
-	var isJSON = (req.query.hasOwnProperty("json") && req.query.json === "true");
 
 	getFolder(folderPath, function(folder){
 		if(!folder){
-			res.statusCode = 404;
-			res.render('404');
+			callback(404);
+			//res.statusCode = 404;
+			//res.render('404');
 			return;
 		}
 
 		if(folder.getAccessibility() === ACCESSIBILITY_NO){
-			res.statusCode = 403;
+			/*res.statusCode = 403;
 			if(isJSON){
 				res.json([]);
 				return;
 			}
-			res.render('403');
+			res.render('403');*/
+			callback(403);
 			return;
 		}
 
 		folder.listFiles(function(returnValue){
-			var data = {
-				name: folder.getName(),
-				path: removeHomeDir(getPathList(folder.getPath())),
-				list: returnValue
-			};
+			folder.getIndex(function(index){
+				callback({
+					name: folder.getName(),
+					path: removeHomeDir(getPathList(folder.getPath())),
+					list: returnValue,
+					index: index
+				});
 
-			if(isJSON){
-				res.json(data);
-				return;
-			}
+				/*if(isJSON){
+					res.json(data);
+					return;
+				}
 
-			res.render('index', data);
+				res.render('index', data);*/
+			});
 		});
 	});
-});
+};
 
 const ACCESSIBILITY_NO = 0;
 const ACCESSIBILITY_PARTIALLY = 1;
@@ -78,7 +79,7 @@ File.prototype = {
 
 		var download = this.config["download"].replace("\\", "/");
 		if (download.charAt(0) === "/") download = download.substr(1);
-		return removeHomeDir(download);
+		return removeHomeDir(download).join('/');
 	},
 
 	getPath: function(){
@@ -128,8 +129,15 @@ Folder.prototype = {
 		return this.name;
 	},
 
+	getDownloadPath: function(){
+		return removeHomeDir(this.getPath()).join('/');
+	},
+
 	getIndex: function(callback){
-		if(!this.config["index"]) return;
+		if(!this.config["index"]){
+			callback(null);
+			return;
+		}
 
 		switch(this.config["index-type"]){
 			case "markdown":
@@ -442,6 +450,10 @@ FileList.prototype = {
 
 	getIndex: function(){
 		return this.index;
+	},
+
+	isFile: function(){
+		return false;
 	}
 };
 
@@ -574,5 +586,3 @@ function removeHomeDir(path){
 		}
 	});
 }
-
-module.exports = router;

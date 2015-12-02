@@ -117,7 +117,8 @@
 			}
 
 			.nav-toggle{
-				border: 1px solid #eee;
+				border: none;
+				border-radius: 4px;
 				padding: 9px 10px;
 				margin-top: 8px;
 				margin-bottom: 8px;
@@ -125,11 +126,12 @@
 			}
 
 			.nav-toggle:hover{
-				background: #eee !important;
+				background: #f39c12 !important;
+				color: #ecf0f1 !important;
 			}
 
 			.nav-top{
-				margin-top: 8px;
+				margin-top: 20px;
 			}
 
 		</style>
@@ -137,21 +139,19 @@
 
 	<body class="top-padding-navbar" role="document">
 		<section role="main">
-			<nav class="navbar navbar-fixed-top" role="navigation">
+			<nav class="navbar navbar-default navbar-fixed-top" role="navigation">
 				<div class="container">
 					<div class="navbar-header">
-						<ul class="breadcrumb nav-top bright-font bg-transparent">
+						<ul class="breadcrumb nav-top bright-font bg-main">
+							<li><a href="/" class="fonted bg-main">&sol;</a></li>
 							<%
-								var path = "/";
+								var pathText = "/";
 								path.forEach(function(v){
-									path += v;
+									pathText += v + "/";
 									%>
-										<li><a href=<%=path%>><%=v%></a></li>
+										<li><a href="<%=pathText%>" class="fonted bg-main"><%=v%></a></li>
 									<%
 								});
-								<li><a href="#">Home</a></li>
-								<li><a href="#">Library</a></li>
-								<li class="active">Data</li>
 							%>
 						</ul>
 
@@ -165,15 +165,42 @@
 					</div>
 
 					<div class="navbar-header navbar-right navbar-collapse collapse">
-						<button type="button" class="bt bg-transparent nav-toggle" data-toggle="collapse" data-target="#right-navbar">
+						<button type="button" class="bt bg-transparent nav-toggle nav-top top-padding-navbar"
+								data-toggle="collapse" data-target="#right-navbar">
 							<span class="fa fa-map-signs bright-font"></span>
 						</button>
 					</div>
 				</div>
 			</nav>
 
-			<div id="content">
-				<% %>
+			<div id="content" class="fonted top-padding-navbar">
+				<div class="jumbotron bg-main no-margin">
+					<div class="container">
+						<% if(index === null){%>
+						<h1><%= name %></h1>
+						<% }else{ %>
+						<%= index %>
+						<% } %>
+					</div>
+				</div>
+				<%
+					list.forEach(function(v){
+						if(v.isFile()){
+							%>
+							<div class="file bg-file">
+								<div class="container">
+									<a id="<%= v.getName() %>" class="bg-file" href="<%= v.getDownloadURL() %>"><%= v.getName() %></a>
+								</div>
+							</div>
+							<%
+						}else{
+							if(v.hasOwnProperty("getFiles")){
+								//FileList, cannot use instanceof because FileList is undefined.
+
+							}
+						}
+					});
+				%>
 			</div>
 		</section>
 

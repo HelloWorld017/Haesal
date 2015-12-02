@@ -129,6 +129,6 @@ module.exports = function(grunt) {
 	grunt.registerTask('default', ['watch']);
 	grunt.registerTask('dist-css', ['less', 'autoprefixer', 'csslint', 'csscomb', 'cssmin']);
 	grunt.registerTask('dist-js', ['concat', 'uglify']);
-	grunt.registerTask('dist', 'dist-css', 'dist-js');
+	grunt.registerTask('dist', ['dist-css', 'dist-js']);
 	
 };

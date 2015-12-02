@@ -1,7 +1,7 @@
 var request = require('supertest'),
 	app = require('../app'),
-	should = require('should'),
-	path = require('path');
+	should = require('should'); //,
+	//path = require('path');
 
 describe('Testing Haesal', function() {
 	var server;

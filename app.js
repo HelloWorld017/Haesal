@@ -4,7 +4,9 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+var manyMatch = require('manymatch');
 
+var config = require('./config');
 var routes = require('./routes/index');
 
 var app = express();
@@ -14,7 +16,28 @@ app.set('views', path.join(__dirname, 'views'));
 app.engine('ejs', require('ejs').renderFile);
 app.set('view engine', 'ejs');
 
-app.use(/.*\/$/, routes);
+var router = express.Router();
+router.get('*', function(req, res){
+	var isJSON = (req.query.hasOwnProperty("json") && req.query.json === "true");
+	routes(req, function(data){
+		if(typeof data === "number"){
+			if(isJSON){
+				res.json([]);
+				return;
+			}
+			res.statusCode = data;
+			res.render(data.toString(10));
+			return;
+		}
+
+		if(isJSON){
+			res.json(data);
+			return;
+		}
+		res.render('index', data);
+	});
+});
+app.use(/.*\/$/, router);
 
 // uncomment after placing your favicon in /public
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
@@ -22,8 +45,46 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
-if((process.env.NODE_ENV || 'development') === 'development') app.use(express.static(path.join(__dirname, 'test')));
+
+if(config.block.block_unreachable_files) app.use(function(req, res, next){
+	var url = req.originalUrl;
+
+	var mm = new manyMatch(config.block.whitelist);
+	if(mm.match(req.originalUrl)){
+		next();
+		return;
+	}
+
+	req.originalUrl = req.originalUrl.split('/').filter(function(v, index, array){
+		return (index !== (array.length - 1));
+	}).join('/');
+
+	routes(req, function(data){
+		req.originalUrl = url;
+		var isValid = false;
+
+		data.list.forEach(function(v){
+			if(v.isFile()){
+				if(v.getDownloadURL() === req.originalUrl){
+					isValid = true;
+				}
+			}
+		});
+
+		if(isValid){
+			next();
+			return;
+		}
+
+		res.statusCode = 404;
+		res.render('404');
+	});
+});
+
+//app.use(express.static(path.join(__dirname, 'public')));
+//if((process.env.NODE_ENV || 'development') === 'development') app.use(express.static(path.join(__dirname, 'test')));
+app.use(express.static(path.join(__dirname, config.main_directory)));
+if(config.main_directory !== config.resources_directory) app.use(express.static(path.join(__dirname, config.resources_directory)));
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
