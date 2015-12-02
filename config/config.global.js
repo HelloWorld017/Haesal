@@ -17,6 +17,8 @@ config.read_config = {
 	encoding: "UTF-8"
 };
 
+config.block = {};
+
 //If you turns on this option, users can get files which are blocked by accessibility.
 //But, remember, you should not upload files which must not be downloaded to public.
 //So, I recommend setting this option to false and not putting security-related files into public.
