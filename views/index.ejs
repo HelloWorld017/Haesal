@@ -141,7 +141,18 @@
 				<div class="container">
 					<div class="navbar-header">
 						<ul class="breadcrumb nav-top bright-font bg-transparent">
-							<% %>
+							<%
+								var path = "/";
+								path.forEach(function(v){
+									path += v;
+									%>
+										<li><a href=<%=path%>><%=v%></a></li>
+									<%
+								});
+								<li><a href="#">Home</a></li>
+								<li><a href="#">Library</a></li>
+								<li class="active">Data</li>
+							%>
 						</ul>
 
 						<button type="button" class="navbar-toggle bg-transparent" data-toggle="collapse" data-target="#top-navbar">
@@ -162,7 +173,7 @@
 			</nav>
 
 			<div id="content">
-
+				<% %>
 			</div>
 		</section>
 

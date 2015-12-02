@@ -39,7 +39,7 @@ describe('Testing Haesal', function() {
 				});
 		});
 
-		it('Checking JSON Value', function(done){
+		/*it('Checking JSON Value', function(done){
 			request(app)
 				.get('/List/?json=true')
 				.expect(200)
@@ -75,7 +75,7 @@ describe('Testing Haesal', function() {
 					}));
 					done();
 				});
-		});
+		});*/
 	});
 
 	describe('Testing Local', function(){
@@ -102,7 +102,7 @@ describe('Testing Haesal', function() {
 					});
 			});
 
-			it('Checking JSON Value', function(done){
+			/*it('Checking JSON Value', function(done){
 				request(app)
 					.get('/LocalPartially/?json=true')
 					.expect(200)
@@ -122,7 +122,7 @@ describe('Testing Haesal', function() {
 						}));
 						done();
 					});
-			});
+			});*/
 		});
 
 		describe('Testing Local with accessibility 2 (Yes)', function(){
@@ -136,7 +136,7 @@ describe('Testing Haesal', function() {
 					});
 			});
 
-			it('Checking JSON Value', function(done){
+			/*it('Checking JSON Value', function(done){
 				request(app)
 					.get('/LocalYes/?json=true')
 					.expect(200)
@@ -156,7 +156,7 @@ describe('Testing Haesal', function() {
 						}));
 						done();
 					});
-			});
+			});*/
 		});
 
 		describe('Testing Local with accessibility 3 (Negative Partially)', function(){
@@ -170,7 +170,7 @@ describe('Testing Haesal', function() {
 					});
 			});
 
-			it('Checking JSON Value', function(done){
+			/*it('Checking JSON Value', function(done){
 				request(app)
 					.get('/LocalNPartially/?json=true')
 					.expect(200)
@@ -196,7 +196,7 @@ describe('Testing Haesal', function() {
 						}));
 						done();
 					});
-			});
+			});*/
 		});
 	});
 });
