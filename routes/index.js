@@ -420,7 +420,9 @@ ListFolder.prototype.listFiles = function(callback){
 		libAsync.map(v, function(fileOrFolder, asyncCallback){
 			if(!fileOrFolder.isFile()){
 				fileOrFolder.listFiles(function(list){
-					asyncCallback(undefined, new FileList(fileOrFolder.getName(), list, fileOrFolder.getIndex()));
+					fileOrFolder.getIndex(function(index){
+						asyncCallback(undefined, new FileList(fileOrFolder.getName(), list, index));
+					});
 				});
 
 				return;
