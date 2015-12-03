@@ -2,12 +2,12 @@
   color: #ecf0f1;
   background-color: #f39c12;
 }
-.bg-main :link {
+.bg-main a:link {
   color: #ecf0f1;
 }
-.bg-main :visited,
-.bg-main :hover,
-.bg-main :active {
+.bg-main a:visited,
+.bg-main a:hover,
+.bg-main a:active {
   font-weight: bold;
   color: inherit;
   text-decoration: none;
@@ -16,12 +16,12 @@
   color: #ecf0f1;
   background-color: #1abc9c;
 }
-.bg-file :link {
+.bg-file a:link {
   color: #ecf0f1;
 }
-.bg-file :visited,
-.bg-file :hover,
-.bg-file :active {
+.bg-file a:visited,
+.bg-file a:hover,
+.bg-file a:active {
   font-weight: bold;
   color: inherit;
   text-decoration: none;
@@ -30,12 +30,12 @@
   color: #ecf0f1;
   background-color: #8e44ad;
 }
-.bg-folder :link {
+.bg-folder a:link {
   color: #ecf0f1;
 }
-.bg-folder :visited,
-.bg-folder :hover,
-.bg-folder :active {
+.bg-folder a:visited,
+.bg-folder a:hover,
+.bg-folder a:active {
   font-weight: bold;
   color: inherit;
   text-decoration: none;
@@ -44,29 +44,57 @@
   color: #ecf0f1;
   background-color: #34495e;
 }
-.bg-list :link {
+.bg-list a:link {
   color: #ecf0f1;
 }
-.bg-list :visited,
-.bg-list :hover,
-.bg-list :active {
+.bg-list a:visited,
+.bg-list a:hover,
+.bg-list a:active {
   font-weight: bold;
   color: inherit;
   text-decoration: none;
 }
-.bg-5 {
+.bg-secondary {
   color: #ecf0f1;
   background-color: #e74c3c;
 }
-.bg-5 :link {
+.bg-secondary a:link {
   color: #ecf0f1;
 }
-.bg-5 :visited,
-.bg-5 :hover,
-.bg-5 :active {
+.bg-secondary a:visited,
+.bg-secondary a:hover,
+.bg-secondary a:active {
   font-weight: bold;
   color: inherit;
   text-decoration: none;
+}
+.btn-default {
+  color: #ecf0f1;
+  background-color: #34495e;
+  border: none;
+}
+.btn-default:hover {
+  color: #ecf0f1;
+  background-color: #222f3d;
+}
+.btn-default:active,
+.btn-default:focus {
+  color: #ecf0f1;
+  background-color: #2b3c4e;
+}
+.btn-primary {
+  color: #ecf0f1;
+  background-color: #16a085;
+  border: none;
+}
+.btn-primary:hover {
+  color: #ecf0f1;
+  background-color: #107360;
+}
+.btn-primary:active,
+.btn-primary:focus {
+  color: #ecf0f1;
+  background-color: #138a72;
 }
 .bg-transparent {
   background-color: transparent !important;

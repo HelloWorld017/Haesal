@@ -18,6 +18,7 @@ app.set('view engine', 'ejs');
 
 var router = express.Router();
 router.get('*', function(req, res){
+	console.log("!");
 	var isJSON = (req.query.hasOwnProperty("json") && req.query.json === "true");
 	routes(req, function(data){
 		if(typeof data === "number"){
@@ -87,10 +88,9 @@ app.use(express.static(path.join(__dirname, config.main_directory)));
 if(config.main_directory !== config.resources_directory) app.use(express.static(path.join(__dirname, config.resources_directory)));
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
-	var err = new Error('Not Found');
-	err.status = 404;
-	next(err);
+app.use(function(req, res) {
+	res.statusCode = 404;
+	res.render('404');
 });
 
 // error handlers
