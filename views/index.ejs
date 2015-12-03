@@ -1,3 +1,66 @@
+<%
+	function createList(list){
+		list.forEach(function(v){
+			if(v.isFile()){
+				%>
+				<div class="file bg-file">
+					<div class="container">
+						<a id="<%= v.getName() %>" href="<%= v.getDownloadURL() %>" class="bg-file" download="<%= v.getName() %>">
+							<%= v.getName() %>
+						</a>
+					</div>
+				</div>
+				<%
+			}else{
+				if(typeof v.isList === 'function' && v.isList()){
+					//FileList, cannot use instanceof because FileList is undefined.
+					%>
+						<div class="file-list bg-list">
+							<div class="container">
+								<div class="panel panel-default" style="margin-top: 10px;">
+									<div class="panel-heading">
+										<h4 class="panel-title">
+											<a id="<%= v.getName() %>" data-toggle="collapse" data-target="#listBody-<%= v.getName() %>">
+												<%= v.getName() %>
+											</a>
+										</h4>
+									</div>
+									<div id="listBody-<%= v.getName() %>" class="panel-collapse collapse in">
+										<div class="panel-body">
+											<% if(v.getIndex() !== null){ %>
+												<div class="jumbotron bg-list">
+													<div class="container">
+															<%- v.getIndex() %>
+													</div>
+												</div>
+											<% } %>
+
+											<% createList(v.getFiles()); %>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					<%
+				}else{
+					%>
+					<div class="folder bg-folder">
+						<div class="container">
+							<% v.getIndex(function(index){
+								if(index !== null){ %>
+									<%- index %>
+								<% }
+							}); %>
+							<a id="<%= v.getName() %>" class="bg-folder" href="<%= v.getDownloadPath() %>"><%= v.getName() %></a>
+						</div>
+					</div>
+					<%
+				}
+			}
+		});
+	}
+%>
+
 <!DOCTYPE html>
 <html lang="ko">
 	<head>
@@ -10,131 +73,23 @@
 		<link rel="stylesheet" type="text/css" href="/resources/css/font-awesome.min.css">
 		<link rel="stylesheet" type="text/css" href="/resources/css/haesal.min.css">
 
-		<!-- Importing jQuery and Bootstrap -->
-		<script src="/resources/js/jquery-2.1.4.min.js"></script>
-		<script src="/resources/js/bootstrap.min.js"></script>
+		<style>
+			.nav-top{
+				margin-top: 8px;
+			}
+
+			.nav-breadcrumb{
+				margin-bottom: 0;
+				margin-left: 10px;
+				display: inline-block;
+			}
+		</style>
 
 		<script>
-			var isScrolling = false;
-
-			$(document).ready(function(){
-				//=====ScrollSpy and AutoScroll=====
-
-				var content = $('#content');
-
-				//Navbar click
-				$('#top-navbar').find('a').on('click', function(event) {
-					event.preventDefault();
-					$("#top-navbar").collapse("hide");
-
-					var hash = this.hash;
-
-					scrollTo($(hash).offset(), hash);
-				});
-
-				//Mouse wheel
-				$('body').on('wheel', function(event){
-					event.preventDefault();
-					var hash = window.location.hash;
-
-					if(hash === ""){
-						hash = "#" + content.children[0].id;
-					}
-
-					var scroll = null;
-
-					if(event.originalEvent.deltaY > 0){
-						//Scrolling down
-						scroll = content.find(hash).next();
-					}else if(event.originalEvent.deltaY < 0){
-						//Scrolling up
-						scroll = content.find(hash).prev();
-					}
-
-					if(!scroll || scroll.length <= 0) return;
-
-					scrollTo(scroll.offset(), "#" + scroll[0].id);
-				});
-
-				//Scrollbar
-				$(window).scroll(function(){
-					if(isScrolling) return;
-
-					var id = getNearestElement(getCurrentScroll());
-
-					if(window.location.hash !== id){
-						history.replaceState(null, null, id);
-					}
-				});
-
-				var scroll = $(window.location.hash);
-				if(scroll.length > 0){
-					scrollTo(scroll.offset(), window.location.hash);
-				}
-			});
-
-			function getCurrentScroll(){
-				return $(window).scrollTop + 50;
-			}
-
-			function getNearestElement(fromTop){
-				var content = $('#content');
-				var current = content.children.map(function(){
-					if($(this).offset().top < fromTop) return this;
-				}).sort();
-
-				var scroll = current[current.length - 1];
-
-				if(!scroll){
-					scroll = content.children[0];
-				}
-				return "#" + scroll.id;
-			}
-
-			function scrollTo(offset, hash){
-				isScrolling = true;
-				$('html, body').animate(
-				{scrollTop: offset.top},
-				{
-					duration: 500,
-					done: function(){
-						window.location.hash = hash;
-						setTimeout(function(){
-							isScrolling = false;
-						}, 50);
-					}
-				});
-			}
+			/*! modernizr 3.2.0 (Custom Build) | MIT *
+			 * http://modernizr.com/download/?-adownload-setclasses !*/
+			!function(e,n,s){function a(e,n){return typeof e===n}function o(){var e,n,s,o,t,i,f;for(var c in r)if(r.hasOwnProperty(c)){if(e=[],n=r[c],n.name&&(e.push(n.name.toLowerCase()),n.options&&n.options.aliases&&n.options.aliases.length))for(s=0;s<n.options.aliases.length;s++)e.push(n.options.aliases[s].toLowerCase());for(o=a(n.fn,"function")?n.fn():n.fn,t=0;t<e.length;t++)i=e[t],f=i.split("."),1===f.length?Modernizr[f[0]]=o:(!Modernizr[f[0]]||Modernizr[f[0]]instanceof Boolean||(Modernizr[f[0]]=new Boolean(Modernizr[f[0]])),Modernizr[f[0]][f[1]]=o),l.push((o?"":"no-")+f.join("-"))}}function t(e){var n=c.className,s=Modernizr._config.classPrefix||"";if(u&&(n=n.baseVal),Modernizr._config.enableJSClass){var a=new RegExp("(^|\\s)"+s+"no-js(\\s|$)");n=n.replace(a,"$1"+s+"js$2")}Modernizr._config.enableClasses&&(n+=" "+s+e.join(" "+s),u?c.className.baseVal=n:c.className=n)}function i(){return"function"!=typeof n.createElement?n.createElement(arguments[0]):u?n.createElementNS.call(n,"http://www.w3.org/2000/svg",arguments[0]):n.createElement.apply(n,arguments)}var l=[],r=[],f={_version:"3.2.0",_config:{classPrefix:"",enableClasses:!0,enableJSClass:!0,usePrefixes:!0},_q:[],on:function(e,n){var s=this;setTimeout(function(){n(s[e])},0)},addTest:function(e,n,s){r.push({name:e,fn:n,options:s})},addAsyncTest:function(e){r.push({name:null,fn:e})}},Modernizr=function(){};Modernizr.prototype=f,Modernizr=new Modernizr;var c=n.documentElement,u="svg"===c.nodeName.toLowerCase();Modernizr.addTest("adownload",!e.externalHost&&"download"in i("a")),o(),t(l),delete f.addTest,delete f.addAsyncTest;for(var d=0;d<Modernizr._q.length;d++)Modernizr._q[d]();e.Modernizr=Modernizr}(window,document);
 		</script>
-
-		<style>
-			.nav-left{
-				position: fixed;
-				left: 0;
-				top: 0;
-				padding-left: 0;
-				font-weight: bold;
-			}
-
-			.nav-toggle{
-				border: none;
-				border-radius: 4px;
-				padding: 9px 10px;
-				margin-top: 8px;
-				margin-bottom: 8px;
-				cursor: inherit;
-			}
-
-			.nav-toggle:hover{
-				background: #f39c12 !important;
-				color: #ecf0f1 !important;
-			}
-
-			.nav-top{
-				margin-top: 20px;
-			}
-
-		</style>
 	</head>
 
 	<body class="top-padding-navbar" role="document">
@@ -142,7 +97,7 @@
 			<nav class="navbar navbar-default navbar-fixed-top" role="navigation">
 				<div class="container">
 					<div class="navbar-header">
-						<ul class="breadcrumb nav-top bright-font bg-main">
+						<ul class="breadcrumb nav-breadcrumb nav-top bright-font bg-main">
 							<li><a href="/" class="fonted bg-main">&sol;</a></li>
 							<%
 								var pathText = "/";
@@ -154,21 +109,6 @@
 								});
 							%>
 						</ul>
-
-						<button type="button" class="navbar-toggle bg-transparent" data-toggle="collapse" data-target="#top-navbar">
-							<span class="fa fa-bars bright-font"></span>
-						</button>
-
-						<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#right-navbar">
-							<span class="fa fa-map-signs bright-font"></span>
-						</button>
-					</div>
-
-					<div class="navbar-header navbar-right navbar-collapse collapse">
-						<button type="button" class="bt bg-transparent nav-toggle nav-top top-padding-navbar"
-								data-toggle="collapse" data-target="#right-navbar">
-							<span class="fa fa-map-signs bright-font"></span>
-						</button>
 					</div>
 				</div>
 			</nav>
@@ -179,35 +119,12 @@
 						<% if(index === null){%>
 						<h1><%= name %></h1>
 						<% }else{ %>
-						<%= index %>
+						<%- index %>
 						<% } %>
 					</div>
 				</div>
-				<%
-					list.forEach(function(v){
-						if(v.isFile()){
-							%>
-							<div class="file bg-file">
-								<div class="container">
-									<a id="<%= v.getName() %>" class="bg-file" href="<%= v.getDownloadURL() %>"><%= v.getName() %></a>
-								</div>
-							</div>
-							<%
-						}else{
-							if(v.hasOwnProperty("getFiles")){
-								//FileList, cannot use instanceof because FileList is undefined.
-
-							}
-						}
-					});
-				%>
+				<% createList(list); %>
 			</div>
 		</section>
-
-		<div id="right-navbar" class="nav-left nav-pills nav-stacked extra-top-padding-navbar collapse in" aria-expanded="false" role="navigation">
-			<ul class="nav">
-				<% %>
-			</ul>
-		</div>
 	</body>
 </html>

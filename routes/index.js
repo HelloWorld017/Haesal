@@ -79,7 +79,7 @@ File.prototype = {
 
 		var download = this.config["download"].replace("\\", "/");
 		if (download.charAt(0) === "/") download = download.substr(1);
-		return removeHomeDir(download).join('/');
+		return '/' + removeHomeDir(download).join('/');
 	},
 
 	getPath: function(){
@@ -130,7 +130,7 @@ Folder.prototype = {
 	},
 
 	getDownloadPath: function(){
-		return removeHomeDir(this.getPath()).join('/');
+		return '/' + removeHomeDir(this.getPath()).join('/');
 	},
 
 	getIndex: function(callback){
@@ -456,6 +456,10 @@ FileList.prototype = {
 
 	isFile: function(){
 		return false;
+	},
+
+	isList: function(){
+		return true;
 	}
 };
 
