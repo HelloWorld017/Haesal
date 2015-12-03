@@ -10,6 +10,12 @@ var config = require('../config');
 
 module.exports = function(req, callback){
 	var folderPath = getFolderPath(req.originalUrl);
+	try{
+		libFs.statSync(folderPath);
+	}catch(err){
+		callback(404);
+		return;
+	}
 
 	getFolder(folderPath, function(folder){
 		if(!folder){

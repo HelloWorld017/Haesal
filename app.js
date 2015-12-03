@@ -18,7 +18,6 @@ app.set('view engine', 'ejs');
 
 var router = express.Router();
 router.get('*', function(req, res){
-	console.log("!");
 	var isJSON = (req.query.hasOwnProperty("json") && req.query.json === "true");
 	routes(req, function(data){
 		if(typeof data === "number"){
