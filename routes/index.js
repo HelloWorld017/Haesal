@@ -9,6 +9,7 @@ var libRequest = require('request');
 var config = require('../config');
 
 module.exports = function(req, callback){
+	req.originalUrl = decodeURI(req.originalUrl);
 	var folderPath = getFolderPath(req.originalUrl);
 	try{
 		libFs.statSync(folderPath);
@@ -20,18 +21,10 @@ module.exports = function(req, callback){
 	getFolder(folderPath, function(folder){
 		if(!folder){
 			callback(404);
-			//res.statusCode = 404;
-			//res.render('404');
 			return;
 		}
 
 		if(folder.getAccessibility() === ACCESSIBILITY_NO){
-			/*res.statusCode = 403;
-			if(isJSON){
-				res.json([]);
-				return;
-			}
-			res.render('403');*/
 			callback(403);
 			return;
 		}
@@ -44,13 +37,6 @@ module.exports = function(req, callback){
 					list: returnValue,
 					index: index
 				});
-
-				/*if(isJSON){
-					res.json(data);
-					return;
-				}
-
-				res.render('index', data);*/
 			});
 		});
 	});
@@ -150,7 +136,6 @@ Folder.prototype = {
 		}
 
 		switch(this.config["index-type"]){
-			//FIXME fix index is not showing
 			case INDEX_TYPE_MARKDOWN:
 				libFs.readFile(libPath.join(this.getPath(), this.config["index"]), config.read_config, function(err, data){
 					if(err){
