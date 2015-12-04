@@ -1,6 +1,6 @@
 {
   "name": "haesal",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "An open-sourced download center project",
   "private": true,
   "dependencies": {
