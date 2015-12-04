@@ -40,6 +40,7 @@ config.block.ignore = true;
 config.github = {};
 config.github.client_id = "xxxx";
 config.github.client_secret = "yyyy";
+config.github.add_link = true;
 
 config.errors = {};
 

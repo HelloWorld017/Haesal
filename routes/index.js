@@ -328,26 +328,41 @@ function GithubFolder(folder){
 GithubFolder.prototype = Object.create(Folder.prototype);
 
 GithubFolder.prototype.getIndex = function(callback){
-	var index = null;
+	var location = this.getLocation();
+	var projectName = this.author + "/" + this.project;
+	var indexPostfix = "";
+	if(config.github.add_link){
+		indexPostfix = '<a href="' + location + '" target="_blank"><span class="fa fa-github" style="font-size: 2em"></span></a>'
+	}
+
+	var indexPlaceholder = '<h1>' + projectName + '</h1>' + indexPostfix;
 
 	if(this.config["index-type"] !== GITHUB_HANDLER_NAME){
-		return this.__parent.getIndex(callback);
+		this.__parent.getIndex(function(v){
+			if(config.github.add_link){
+				v += indexPostfix;
+			}
+
+			callback(v);
+		});
+
+		return;
 	}
 
 	libRequest(this.location + "/blob/master/README.md", function(err, response, body){
 		if(err || (response.statusCode !== 200)){
-			callback(null);
+			callback(indexPlaceholder);
 			return;
 		}
 
 		var $ = libCheerio.load(body);
 		var readme = $('#readme');
 		if(readme){
-			callback(readme.html());
+			callback(readme.html() + indexPostfix);
 			return;
 		}
 
-		callback(null);
+		callback(indexPlaceholder);
 	});
 };
 
