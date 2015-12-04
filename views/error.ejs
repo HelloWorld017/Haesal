@@ -1,10 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<title></title>
-</head>
-<body>
-<h1><%= error %></h1>
-</body>
+<html lang="<%= config.lang %>">
+	<head>
+		<meta charset="UTF-8">
+		<title>Oops!</title>
+
+		<meta name="viewport" content="width=device-width, user-scalable=no">
+
+		<link rel="stylesheet" type="text/css" href="/resources/css/bootstrap.min.css">
+		<link rel="stylesheet" type="text/css" href="/resources/css/font-awesome.min.css">
+		<link rel="stylesheet" type="text/css" href="/resources/css/haesal.min.css">
+
+		<style>
+			html, body{
+				width: 100%;
+				height: 100%;
+			}
+		</style>
+	</head>
+	<body class="full bg-main">
+		<section>
+			<div class="container">
+				<h1 style="font-size: 10em; text-align: center">
+					<%= errorno %>
+				</h1>
+
+				<h3 style="text-align: center">
+					<%= masthead %>
+				</h3>
+
+				<div style="max-width: 500px; margin: 0 auto;">
+					<p style="width: 100%; text-align: center;">
+						<%= description %>
+					</p>
+					<div class="btn-group" style="width: 100%">
+						<button class="btn btn-primary" style="width:60%" onclick="history.go(-1)">
+							<span class="fa fa-chevron-left"></span>
+							Previous Page
+						</button>
+						<a class="btn btn-default" style="width:40%" href="/">
+							<span class="fa fa-home"></span>
+							Main
+						</a>
+					</div>
+			</div>
+		</section>
+	</body>
 </html>

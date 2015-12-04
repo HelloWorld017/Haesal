@@ -281,6 +281,13 @@ Folder.prototype = {
 							var exclusions = data.split(/\r|\n/).filter(function(v){
 								return v !== '';
 							});
+
+							if(config.wildcard_auto_sep) exclusions = exclusions.map(function(v){
+								if(path.sep === "\\") return v.replace("/", "\\");
+
+								return v.replace("\\", "/");
+							});
+
 							var manymatch = new libManymatch(exclusions);
 
 							libAsync.filter(res, function(fileObj, filterCallback){

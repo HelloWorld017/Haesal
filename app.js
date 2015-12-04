@@ -25,8 +25,12 @@ router.get('*', function(req, res){
 				res.json([]);
 				return;
 			}
+
+			var errorInfo = getErrorInfo(data);
+			errorInfo.config = config;
+
 			res.statusCode = data;
-			res.render(data.toString(10));
+			res.render('error', errorInfo);
 			return;
 		}
 
@@ -34,9 +38,12 @@ router.get('*', function(req, res){
 			res.json(data);
 			return;
 		}
+
+		data.config = config;
 		res.render('index', data);
 	});
 });
+
 app.use(/.*\/$/, router);
 
 // uncomment after placing your favicon in /public
@@ -46,74 +53,107 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-if(config.block.block_unreachable_files) app.use(function(req, res, next){
-	var url = req.originalUrl;
+if(config.block.block_unreachable_files){
+	//No use for auto sep because web access url is always /
 
 	var mm = new manyMatch(config.block.whitelist);
-	if(mm.match(req.originalUrl)){
-		next();
-		return;
-	}
 
-	req.originalUrl = req.originalUrl.split('/').filter(function(v, index, array){
-		return (index !== (array.length - 1));
-	}).join('/');
+	app.use(function(req, res, next){
+		var url = req.originalUrl;
 
-	routes(req, function(data){
-		req.originalUrl = url;
-		var isValid = false;
-
-		data.list.forEach(function(v){
-			if(v.isFile()){
-				if(v.getDownloadURL() === req.originalUrl){
-					isValid = true;
-				}
-			}
-		});
-
-		if(isValid){
+		if(mm.match(req.originalUrl)){
 			next();
 			return;
 		}
 
-		res.statusCode = 404;
-		res.render('404');
-	});
-});
+		req.originalUrl = req.originalUrl.split('/').filter(function(v, index, array){
+			return (index !== (array.length - 1));
+		}).join('/');
 
-//app.use(express.static(path.join(__dirname, 'public')));
-//if((process.env.NODE_ENV || 'development') === 'development') app.use(express.static(path.join(__dirname, 'test')));
-app.use(express.static(path.join(__dirname, config.main_directory)));
-if(config.main_directory !== config.resources_directory) app.use(express.static(path.join(__dirname, config.resources_directory)));
+		routes(req, function(data){
+			var isJSON = (req.query.hasOwnProperty("json") && req.query.json === "true");
 
-// catch 404 and forward to error handler
-app.use(function(req, res) {
-	res.statusCode = 404;
-	res.render('404');
-});
+			if(typeof data === "number"){
+				if(isJSON){
+					res.json([]);
+					return;
+				}
 
-// error handlers
+				var errorInfo = getErrorInfo(data);
+				errorInfo.config = config;
 
-// development error handler
-// will print stacktrace
-if (app.get('env') === 'development') {
-	app.use(function(err, req, res, next) {
-		res.status(err.status || 500);
-			res.render('error', {
-			message: err.message,
-			error: err
+				res.statusCode = data;
+				res.render(error, errorInfo);
+				return;
+			}
+
+			req.originalUrl = url;
+			var isValid = false;
+
+			data.list.forEach(function(v){
+				if(v.isFile()){
+					if(v.getDownloadURL() === req.originalUrl) isValid = true;
+				}
+			});
+
+			if(isValid){
+				next();
+				return;
+			}
+
+			var code = 404;
+
+			if(config.block.ignore)code = 404;
+			else code = 403;
+
+			res.statusCode = code;
+
+			if(isJSON){
+				res.json([]);
+			}
+
+			var errorData = getErrorInfo(code);
+			errorData.config = config;
+
+			res.render('error', errorData);
 		});
 	});
 }
 
-// production error handler
-// no stacktraces leaked to user
-app.use(function(err, req, res, next) {
-	res.status(err.status || 500);
-	res.render('error', {
-		message: err.message,
-		error: {}
-	});
+app.use(express.static(path.join(__dirname, config.main_directory)));
+if(config.main_directory !== config.resources_directory) app.use(express.static(path.join(__dirname, config.resources_directory)));
+
+// catch 404 and forward to error handler
+app.use(function(req, res, next){
+	var err = new Error();
+	err.status = 404;
+	next(err);
 });
+
+app.use(function(err, req, res, next) {
+	err.status = err.status || 500;
+
+	var errorData = getErrorInfo(err.status);
+	errorData.config = config;
+
+	if(err.status === 500 && err.message) errorData.description = err.message;
+
+	res.statusCode = err.status;
+	res.render('error', errorData);
+});
+
+function getErrorInfo(errorno){
+	var description = "No description given.";
+	var masthead = "No masthead given.";
+
+	if(config.errors.hasOwnProperty(errorno + "-masthead")) masthead = config.errors[errorno + "-masthead"];
+	if(config.errors.hasOwnProperty(errorno + "-description")) description = config.errors[errorno + "-description"];
+
+	return {
+		errorno: errorno,
+		masthead: masthead,
+		description: description
+	};
+}
 
 module.exports = app;
