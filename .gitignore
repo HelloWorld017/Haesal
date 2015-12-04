@@ -1,4 +1,7 @@
 .idea/
-winpty.exe.stackdump
+*.stackdump
 node_modules/
-public/downloads/
+public/
+downloads/
+config.custom.js
+*.log

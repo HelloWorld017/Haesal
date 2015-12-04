@@ -61,14 +61,18 @@ const ACCESSIBILITY_PARTIALLY = 1;
 const ACCESSIBILITY_YES = 2;
 const ACCESSIBILITY_NEGATIVE_PARTIALLY = 3;
 
-const FILE_TYPE_LOCAL = 0;
-const FILE_TYPE_REMOTE = 1;
-
 const GITHUB_API_BASE = "https://api.github.com/repos/";
 const GITHUB_URL_BASE = "https://github.com/";
 
-const GITHUB_HANDLER_NAME = "github";
-const LIST_HANDLER_NAME = "list";
+const FILE_TYPE_LOCAL = 0;
+const FILE_TYPE_REMOTE = 1;
+
+const FOLDER_TYPE_GITHUB = "github";
+const FOLDER_TYPE_LIST = "list";
+
+const INDEX_TYPE_HTML = "html";
+const INDEX_TYPE_MARKDOWN = "markdown";
+const INDEX_TYPE_GITHUB = "github";
 
 function File(name, config){
 	this.name = name;
@@ -146,8 +150,9 @@ Folder.prototype = {
 		}
 
 		switch(this.config["index-type"]){
-			case "markdown":
-				libFs.readFile(this.config["index"], config.read_config, function(err, data){
+			//FIXME fix index is not showing
+			case INDEX_TYPE_MARKDOWN:
+				libFs.readFile(libPath.join(this.getPath(), this.config["index"]), config.read_config, function(err, data){
 					if(err){
 						callback(null);
 						return;
@@ -157,8 +162,8 @@ Folder.prototype = {
 				});
 				break;
 
-			case "html":
-				libFs.readFile(this.config["index"], config.read_config, function(err, data){
+			case INDEX_TYPE_HTML:
+				libFs.readFile(libPath.join(this.getPath(), this.config["index"]), config.read_config, function(err, data){
 					if(err){
 						callback(null);
 						return;
@@ -179,7 +184,6 @@ Folder.prototype = {
 	},
 
 	listFiles: function(callback){
-		var fileObjects = [];
 		var path = this.getPath();
 		var accessibility = this.getAccessibility();
 
@@ -195,39 +199,44 @@ Folder.prototype = {
 					return;
 
 				case ACCESSIBILITY_PARTIALLY:
-					libAsync.each(files, function(v, asyncCallback){
+					libAsync.map(files, function(v, asyncCallback){
 						libFs.stat(libPath.join(path, v), function(err, stat){
 							if(err){
-								asyncCallback();
+								asyncCallback(undefined, null);
 							}
 
 							if(stat.isDirectory()){
-								getFile(v, path, function(folder){
-									fileObjects.push(folder);
-									asyncCallback();
+								libFs.readFile(libPath.join(path, v, config.folder_name), config.read_config, function(err, data){
+									if(!err){
+										getFolder(refineFolderPath(libPath.join(path, v)), function(folder){
+											asyncCallback(undefined, folder);
+										}, data);
+										return;
+									}
+
+									asyncCallback(undefined, null);
 								});
 							}else if(libPath.extname(v) === config.file_ext){
 								libFs.readFile(libPath.join(path, v), config.read_config, function(err, data){
 									if(err){
-										asyncCallback();
+										asyncCallback(undefined, null);
 										return;
 									}
 									var json = JSON.parse(data);
 									//Although it is a file, I used getFolderName because the algorithm is same.
-									fileObjects.push((new File(getFolderName(json["download"]), json)));
-									asyncCallback();
+									asyncCallback(undefined, (new File(getFolderName(json["download"]), json)));
 								});
 							}else{
-								asyncCallback();
+								asyncCallback(undefined, null);
 							}
 						});
-					}, function(err){
+					}, function(err, res){
 						if(err){
 							callback([]);
 							return;
 						}
 
-						callback(fileObjects.filter(function(v){
+						callback(res.filter(function(v){
 							return v !== null;
 						}));
 					});
@@ -337,7 +346,7 @@ GithubFolder.prototype.getIndex = function(callback){
 
 	var indexPlaceholder = '<h1>' + projectName + '</h1>' + indexPostfix;
 
-	if(this.config["index-type"] !== GITHUB_HANDLER_NAME){
+	if(this.config["index-type"] !== INDEX_TYPE_GITHUB){
 		this.__parent.getIndex(function(v){
 			if(config.github.add_link){
 				v += indexPostfix;
@@ -491,7 +500,14 @@ FileList.prototype = {
 	}
 };
 
-function getFolder(directory, callback){
+function getFolder(directory, callback, conf){
+	if(conf !== undefined){
+		if(typeof conf === 'string') conf = JSON.parse(conf);
+
+		callback(getTypedFolder(new Folder(directory, conf)));
+		return;
+	}
+
 	libFs.readFile(libPath.join(directory, config.folder_name), config.read_config, function(err, data){
 		var folder;
 		if(err){
@@ -500,12 +516,16 @@ function getFolder(directory, callback){
 			folder = new Folder(directory, JSON.parse(data));
 		}
 
-		switch(folder.getFolderType()){
-			case GITHUB_HANDLER_NAME: callback(new GithubFolder(folder)); break;
-			case LIST_HANDLER_NAME: callback(new ListFolder(folder)); break;
-			default: callback(folder);
-		}
+		callback(getTypedFolder(folder));
 	});
+}
+
+function getTypedFolder(folder){
+	switch(folder.getFolderType()){
+		case FOLDER_TYPE_GITHUB: return new GithubFolder(folder); break;
+		case FOLDER_TYPE_LIST: return new ListFolder(folder); break;
+		default: return folder;
+	}
 }
 
 function getFile(fileName, path, callback){
