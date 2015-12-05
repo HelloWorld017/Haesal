@@ -119,6 +119,7 @@ Default of file information files is this :
 
 #### File types
 Files have two types:
+
 1. Local : Local files. (download means path of the file.)
 
 2. Remote : Remote files. (download just means download URL.)
