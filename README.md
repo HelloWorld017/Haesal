@@ -134,3 +134,6 @@ Otherwise, it must be path of your file.
 
 ### Wildcards (Exclusions and Block Whitelist)
 [Look at minimatch documentation](https://github.com/isaacs/minimatch)
+
+## Showcase
+http://play.khinenw.tk:3000

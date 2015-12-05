@@ -2,7 +2,6 @@
   "name": "haesal",
   "version": "0.0.2",
   "description": "An open-sourced download center project",
-  "private": true,
   "dependencies": {
     "async": "^1.5.0",
     "body-parser": "~1.13.2",
@@ -48,6 +47,13 @@
     "download",
     "web"
   ],
-  "author": "Khinenw",
+  "author": {
+    "name": "Khinenw",
+    "url": "https://khinenw.tk"
+  },
+  "repository" : {
+	"type" : "git",
+  	"url" : "https://github.com/HelloWorld017/Haesal.git"
+  },
   "license": "GPL-3.0"
 }
