@@ -17,6 +17,7 @@ $ npm start
 ## How to edit configs?
 
 1. Open ./config/config.custom.js
+
 2. Add your configures.
 
 
@@ -70,7 +71,8 @@ Contains texts for errors.
 ### Folder Information file
 
 #### Accessibilities
-Folders have 3 accessibility types
+Folders have 3 accessibility types:
+
 1. 0 : No : It will send just a 403.
 
 2. 1 : Partially (Whitelist) : It will send files which have file information and folders which have folder information.
@@ -80,7 +82,8 @@ Folders have 3 accessibility types
 4. 3 : Negative Partially (Blacklist) : It will send all files and folder excepts which are filtered by exclusion file.
 
 #### Folder types
-Folders have three type:
+Folders have three types:
+
 1. Local : Local directories.
 
 2. Github: Github directories.
