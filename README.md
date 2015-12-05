@@ -17,6 +17,7 @@ $ npm start
 ## How to edit configs?
 
 1. Open ./config/config.custom.js
+
 2. Add your configures.
 
 
@@ -42,7 +43,7 @@ This will be applied to folders which doesn't have folder information file. (con
 ##### config.read_config
 Files will be read using this setting.
 ##### config.wildcard_auto_sep
-If your file separator (/ or \) in wildcards is different with it of your system, it will be changed automatically.
+If your file separator (/ or &#92;) in wildcards is different with it of your system, it will be changed automatically.
 ##### config.lang
 The language which will be used in html file. (&lt;html lang="en"&gt;)
 #### config.block
@@ -70,20 +71,41 @@ Contains texts for errors.
 ### Folder Information file
 
 #### Accessibilities
-Folders have 3 accessibility types
+Folders have 3 accessibility types:
+
 1. 0 : No : It will send just a 403.
+
 2. 1 : Partially (Whitelist) : It will send files which have file information and folders which have folder information.
+
 3. 2 : Yes : It will send all files excepts folder information file.
+
 4. 3 : Negative Partially (Blacklist) : It will send all files and folder excepts which are filtered by exclusion file.
 
 #### Folder types
-Folders have three type:
+Folders have three types:
+
 1. Local : Local directories.
+
 2. Github: Github directories.
+
 3. List : Directories which returns sub-folders as lists.
 
 #### Documentation
-##### 
+##### accessibility
+Accessibility of inner contents. If you want to protect files by direct url access, please turn on config.block options.
+##### index
+Index filename of the folder. If you don't want to use index, make it to false. The index will be shown instead of title of the folder.
+##### index-type
+If you want to interpret the file as markdown, set this "markdown". If you want to use html, set this "html".
+
+Also, there is another option. If you are using github folder, setting this as "github" will show README.md.
+##### type
+The type of the folder. There are three options : "github", "list", "local".
+##### github-project, github-author
+If you are using GithubFolder, you must set this options.
+The github-project option is name of your repository.
+The github-author option is name of you or your group.
+For example, "github-project": "Haesal", "github-author": "HelloWorld017".
 
 ### File Information file
 
@@ -97,8 +119,18 @@ Default of file information files is this :
 
 #### File types
 Files have two types:
+
 1. Local : Local files. (download means path of the file.)
+
 2. Remote : Remote files. (download just means download URL.)
+
+#### Documentation
+##### type
+Represents the type of your file.
+"local" or "remote" is available.
+##### download
+If you're using remote, it must be the download link of your file.
+Otherwise, it must be path of your file.
 
 ### Wildcards (Exclusions and Block Whitelist)
 [Look at minimatch documentation](https://github.com/isaacs/minimatch)
