@@ -1,64 +1,22 @@
 var libAsync = require('async');
-var libCheerio = require('cheerio');
 var libFs = require('fs');
 var libMarked = require('marked');
 var libManymatch = require('manymatch');
 var libPath = require('path');
-var libRequest = require('request');
 
+var plugins = require('../plugins')();
 var config = require('../config');
-
-module.exports = function(req, callback){
-	req.originalUrl = decodeURI(req.originalUrl);
-	var folderPath = getFolderPath(req.originalUrl);
-	try{
-		libFs.statSync(folderPath);
-	}catch(err){
-		callback(404);
-		return;
-	}
-
-	getFolder(folderPath, function(folder){
-		if(!folder){
-			callback(404);
-			return;
-		}
-
-		if(folder.getAccessibility() === ACCESSIBILITY_NO){
-			callback(403);
-			return;
-		}
-
-		folder.listFiles(function(returnValue){
-			folder.getIndex(function(index){
-				callback({
-					name: folder.getName(),
-					path: removeHomeDir(getPathList(folder.getPath())),
-					list: returnValue,
-					index: index
-				});
-			});
-		});
-	});
-};
 
 const ACCESSIBILITY_NO = 0;
 const ACCESSIBILITY_PARTIALLY = 1;
 const ACCESSIBILITY_YES = 2;
 const ACCESSIBILITY_NEGATIVE_PARTIALLY = 3;
 
-const GITHUB_API_BASE = "https://api.github.com/repos/";
-const GITHUB_URL_BASE = "https://github.com/";
-
 const FILE_TYPE_LOCAL = 0;
 const FILE_TYPE_REMOTE = 1;
 
-const FOLDER_TYPE_GITHUB = "github";
-const FOLDER_TYPE_LIST = "list";
-
 const INDEX_TYPE_HTML = "html";
 const INDEX_TYPE_MARKDOWN = "markdown";
-const INDEX_TYPE_GITHUB = "github";
 
 function File(name, config){
 	this.name = name;
@@ -309,154 +267,6 @@ Folder.prototype = {
 	}
 };
 
-function GithubFolder(folder){
-	this.path = folder.path;
-	this.config = folder.config;
-	this.project = this.config["github-project"];
-	this.author = this.config["github-author"];
-	this.name = this.project;
-	this.location = GITHUB_URL_BASE + this.author + "/" + this.project;
-	this.__parent = folder;
-}
-
-GithubFolder.prototype = Object.create(Folder.prototype);
-
-GithubFolder.prototype.getIndex = function(callback){
-	var location = this.getLocation();
-	var projectName = this.author + "/" + this.project;
-	var indexPostfix = "";
-	if(config.github.add_link){
-		indexPostfix = '<a href="' + location + '" target="_blank"><span class="fa fa-github" style="font-size: 2em"></span></a>'
-	}
-
-	var indexPlaceholder = '<h1>' + projectName + '</h1>' + indexPostfix;
-
-	if(this.config["index-type"] !== INDEX_TYPE_GITHUB){
-		this.__parent.getIndex(function(v){
-			if(config.github.add_link){
-				v += indexPostfix;
-			}
-
-			callback(v);
-		});
-
-		return;
-	}
-
-	libRequest(this.location + "/blob/master/README.md", function(err, response, body){
-		if(err || (response.statusCode !== 200)){
-			callback(indexPlaceholder);
-			return;
-		}
-
-		var $ = libCheerio.load(body);
-		var readme = $('#readme');
-		if(readme){
-			callback(readme.html() + indexPostfix);
-			return;
-		}
-
-		callback(indexPlaceholder);
-	});
-};
-
-GithubFolder.prototype.getLocation = function(){
-	return this.location;
-};
-
-GithubFolder.prototype.listFiles = function(callback){
-	if(this.getAccessibility() === ACCESSIBILITY_NO) return;
-
-	var url = GITHUB_API_BASE + this.author + "/" + this.project + "/releases";
-	if(config.github.use_api_key) url += "?client_id" + config.github.client_id + "&client_secret" + config.github.client_secret;
-
-	libRequest({
-		url: url,
-		headers: {
-			'User-Agent': 'Haesal'
-		}
-	}, function(err, response, body){
-		if(err || response.statusCode !== 200){
-			callback([]);
-			return;
-		}
-
-		var lists = [];
-
-		libAsync.each(JSON.parse(body), function(json, asyncCallback){
-			if(!json){
-				asyncCallback();
-				return;
-			}
-
-			var index = libMarked(json["body"]);
-			var files = [];
-
-			json["assets"].forEach(function(v){
-				files.push(new File(v["name"], {
-					download: v["browser_download_url"],
-					type: FILE_TYPE_REMOTE
-				}));
-			});
-
-			files.push(new File(json["name"] + ".zip", {
-				download: json["zipball_url"],
-				type: FILE_TYPE_REMOTE
-			}));
-
-			files.push(new File(json["name"] + ".tar.gz", {
-				download: json["tarball_url"],
-				type: FILE_TYPE_REMOTE
-			}));
-
-			lists.push(new FileList(
-				json["name"],
-				files,
-				index
-			));
-
-			asyncCallback();
-
-		}, function(err){
-			if(err){
-				callback([]);
-				return;
-			}
-
-			callback(lists);
-		});
-	});
-};
-
-function ListFolder(folder){
-	this.path = folder.path;
-	this.config = folder.config;
-	this.name = folder.name;
-	this.__parent = folder;
-}
-
-ListFolder.prototype = Object.create(Folder.prototype);
-
-ListFolder.prototype.listFiles = function(callback){
-	this.__parent.listFiles(function(v){
-		libAsync.map(v, function(fileOrFolder, asyncCallback){
-			if(!fileOrFolder.isFile()){
-				fileOrFolder.listFiles(function(list){
-					fileOrFolder.getIndex(function(index){
-						asyncCallback(undefined, new FileList(fileOrFolder.getName(), list, index));
-					});
-				});
-
-				return;
-			}
-
-			asyncCallback(undefined, fileOrFolder);
-		}, function(err, res){
-			callback(res);
-		});
-	});
-};
-
 function FileList(name, files, index){
 	this.name = name;
 	this.files = files;
@@ -506,11 +316,11 @@ function getFolder(directory, callback, conf){
 }
 
 function getTypedFolder(folder){
-	switch(folder.getFolderType()){
-		case FOLDER_TYPE_GITHUB: return new GithubFolder(folder); break;
-		case FOLDER_TYPE_LIST: return new ListFolder(folder); break;
-		default: return folder;
+	if(plugins.hasOwnProperty(folder.getFolderType())){
+		return new (plugins[folder.getFolderType()])(folder);
 	}
+
+	default: return folder;
 }
 
 function getFile(fileName, path, callback){
@@ -625,3 +435,43 @@ function removeHomeDir(path){
 		}
 	});
 }
+
+module.exports = {
+	getList: function(req, callback){
+		req.originalUrl = decodeURI(req.originalUrl);
+		var folderPath = getFolderPath(req.originalUrl);
+		try{
+			libFs.statSync(folderPath);
+		}catch(err){
+			callback(404);
+			return;
+		}
+
+		getFolder(folderPath, function(folder){
+			if(!folder){
+				callback(404);
+				return;
+			}
+
+			if(folder.getAccessibility() === ACCESSIBILITY_NO){
+				callback(403);
+				return;
+			}
+
+			folder.listFiles(function(returnValue){
+				folder.getIndex(function(index){
+					callback({
+						name: folder.getName(),
+						path: removeHomeDir(getPathList(folder.getPath())),
+						list: returnValue,
+						index: index
+					});
+				});
+			});
+		});
+	},
+
+	Folder: Folder,
+	File: File,
+	FileList: FileList
+};

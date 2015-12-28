@@ -19,7 +19,7 @@ app.set('view engine', 'ejs');
 var router = express.Router();
 router.get('*', function(req, res){
 	var isJSON = (req.query.hasOwnProperty("json") && req.query.json === "true");
-	routes(req, function(data){
+	routes.getList(req, function(data){
 		if(typeof data === "number"){
 			if(isJSON){
 				res.json([]);
@@ -70,7 +70,7 @@ if(config.block.block_unreachable_files){
 			return (index !== (array.length - 1));
 		}).join('/');
 
-		routes(req, function(data){
+		routes.getList(req, function(data){
 			var isJSON = (req.query.hasOwnProperty("json") && req.query.json === "true");
 
 			if(typeof data === "number"){
